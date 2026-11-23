@@ -1,0 +1,92 @@
+{
+  "icons": {
+    "alb": {
+      "offset": 11270908,
+      "compressedSize": 1031,
+      "size": 2937,
+      "svg": "Res_Elastic-Load-Balancing_Application-Load-Balancer_48.svg"
+    },
+    "api-gateway": {
+      "offset": 9504410,
+      "compressedSize": 792,
+      "size": 1764,
+      "svg": "Arch_Amazon-API-Gateway_48.svg"
+    },
+    "cloudtrail": {
+      "offset": 3014683,
+      "compressedSize": 1067,
+      "size": 2282,
+      "svg": "Arch_AWS-CloudTrail_48.svg"
+    },
+    "cloudwatch": {
+      "offset": 3111174,
+      "compressedSize": 1676,
+      "size": 3711,
+      "svg": "Arch_Amazon-CloudWatch_48.svg"
+    },
+    "codebuild": {
+      "offset": 3930322,
+      "compressedSize": 1369,
+      "size": 3167,
+      "svg": "Arch_AWS-CodeBuild_48.svg"
+    },
+    "codepipeline": {
+      "offset": 3921484,
+      "compressedSize": 798,
+      "size": 1690,
+      "svg": "Arch_AWS-CodePipeline_48.svg"
+    },
+    "ecr": {
+      "offset": 4527475,
+      "compressedSize": 1048,
+      "size": 2100,
+      "svg": "Arch_Amazon-Elastic-Container-Registry_48.svg"
+    },
+    "ecs": {
+      "offset": 4531880,
+      "compressedSize": 1153,
+      "size": 2403,
+      "svg": "Arch_Amazon-Elastic-Container-Service_48.svg"
+    },
+    "fargate": {
+      "offset": 4516623,
+      "compressedSize": 1596,
+      "size": 4061,
+      "svg": "Arch_AWS-Fargate_48.svg"
+    },
+    "lambda": {
+      "offset": 828685,
+      "compressedSize": 931,
+      "size": 1814,
+      "svg": "Arch_AWS-Lambda_48.svg"
+    },
+    "organizations": {
+      "offset": 3062731,
+      "compressedSize": 959,
+      "size": 2565,
+      "svg": "Arch_AWS-Organizations_48.svg"
+    },
+    "s3": {
+      "offset": 7915677,
+      "compressedSize": 941,
+      "size": 1939,
+      "svg": "Arch_Amazon-Simple-Storage-Service_48.svg"
+    },
+    "sns": {
+      "offset": 8358105,
+      "compressedSize": 1370,
+      "size": 3058,
+      "svg": "Arch_Amazon-Simple-Notification-Service_48.svg"
+    },
+    "sqs": {
+      "offset": 8351448,
+      "compressedSize": 2340,
+      "size": 5877,
+      "svg": "Arch_Amazon-Simple-Queue-Service_48.svg"
+    }
+  },
+  "release": "2026-07-31",
+  "size": 13988918,
+  "url": "https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/architecture-icon-release/Icon-package_07312026.5846e92413caa21490223536cc97f1269e44fa92.zip",
+  "sha256": "d2d166c453526471749d520e0db022c459abef759d2946cf2dd1d1c992dc6526"
+}

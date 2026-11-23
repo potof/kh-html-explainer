@@ -1,0 +1,76 @@
+# kh-html-explainer
+
+技術解説・調査・比較のための個人用 Codex Skill。Markdown から、テーマと図を内包した単一の HTML を生成します。[サンプル原稿「HTTP キャッシュ再検証の設計ガイド」](examples/http-cache-validation.md)では、RFC を根拠に、処理フロー、方針の比較、HTTP の例、導入後の検証を説明しています。
+
+## Mac で生成する
+
+Node.js 22 以上を用意し、このリポジトリを Codex で開きます。
+
+> $kh-html-explainer キャッシュ更新方式の比較を、日本語のHTML資料にしてください。処理フロー図と比較表を入れてください。
+
+Codex を介さず、同梱の変換器を直接呼び出せます。
+
+```sh
+mkdir -p out
+node .agents/skills/kh-html-explainer/dist/render.mjs examples/http-cache-validation.md out/http-cache-validation.html
+open out/http-cache-validation.html
+```
+
+出力先の親ディレクトリを先に作ってください。既存ファイルへの上書きはエラーになります。別のリポジトリでも使う場合は `.agents/skills/kh-html-explainer` 一式を `~/.agents/skills/` に配置できます。[Codex の Skill 検出ルール](https://learn.chatgpt.com/docs/build-skills)
+
+## Codex Cloud と iPhone で使う
+
+1. このリポジトリを Codex Cloud の環境に接続します。Node.js 22 以上を選びます。同梱の変換器をそのまま使えます。AWS公式アイコンの初回取得が必要な場合は、下記のAWS構成図の手順を使います。
+2. iPhone の ChatGPT アプリの Codex で、その環境から生成できる場合はタスクを開始します。Skill が選択肢に出なければ「`.agents/skills/kh-html-explainer/SKILL.md` を使ってHTMLを生成して」と指定します。使える Cloud 環境や起動方法はアカウントに表示される機能に従ってください。[Codex Cloud の環境設定](https://learn.chatgpt.com/docs/environments/cloud-environment)
+3. タスクで HTML の添付を依頼し、添付を開くか「ファイル」に保存してプレビューします。使っているクライアントが HTML を添付できない場合は、生成した資料は別の非公開リポジトリで共有するか、Mac に保存した HTML を AirDrop で iPhone に渡します。Cloud の作業ディレクトリへのリンクは、iPhone からのダウンロード URL としては使えません。
+4. iPhone から Mac 上の Codex を使う場合は、ChatGPT のリモート接続を設定して Mac のワークスペースで同じ Skill を起動できます。[リモート接続の設定](https://learn.chatgpt.com/docs/remote-connections)
+
+オフライン閲覧は保存済みの HTML が対象です。初期表示はライトで、ページ上部の「ライト / ダーク」で切り替えます。「A− / A＋」では文字と図の表示サイズを90〜130%に調整できます。広い画面では表の列数、図の幅、コードの行幅に応じてカードの幅を配分します。狭い画面では縦一列になり、収まらない表・図・コードは枠内で横にスクロールできます。
+
+## 確認事項と AI Agent へのコメント
+
+確認事項は、対応する段落・表・図の直後に `confirm` ブロックで書きます。単一選択・複数選択・自由記述を使えます。参考リンクは末尾の `## 参考リンク` にまとめ、本文から `#references` で参照できます。
+
+確認事項に回答するか、各カード見出しの吹き出しアイコンを押して指示を書きます。上部の「指示文を生成」を押すと、回答、コメント、段落への注記をカードID・見出し付きでまとめられます。同じボタンをもう一度押すと指示文を閉じます。カードIDは本文の `##` 見出し順に A〜Z、その後は P27 から割り当てます。「指示文をコピー」で Codex などに貼り付けられます。クリップボードを使えないプレビューでは表示された指示文を手動でコピーしてください。回答、コメント、注記は閲覧中の入力欄にあり、元の HTML ファイルへの保存や外部送信は行いません。
+
+文章の一箇所に修正を頼むときは、上部の「段落に注記」を押して対象の段落を選びます。指示文には段落の引用と原稿の開始行が含まれます。
+
+## AWS構成図
+
+[サンプル原稿](examples/aws-architecture-samples.md)には、API連携、マルチアカウント、DevOps、CloudWatch、ECSの5図があります。原稿に `@aws:ecs` などのアイコンIDを書くと、初回のみ固定バージョンの [AWS公式ZIP](https://aws.amazon.com/architecture/icons/) を `curl` で取得します。SHA-256で検証したZIP全体を保存し、再生成時はキャッシュから読み取ります。出力HTMLには使用したSVGだけを、サービスごとに1回埋め込みます。
+
+```sh
+mkdir -p out
+node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-architecture-samples.md out/aws-architecture-samples.html
+```
+
+キャッシュ先はMacでは `~/Library/Caches/html-explainer`、Linuxでは `${XDG_CACHE_HOME:-~/.cache}/html-explainer` です。Codex Cloudなどで保存先を指定する場合は `HTML_EXPLAINER_CACHE_DIR` を設定します。生成時の通信を禁止する場合は、入力ファイルの前に `--offline` を付けます。アイコンに必要なZIPがキャッシュにない場合は、エラーを表示して終了します。
+
+## 原稿とセキュリティ
+
+- 分岐や経路は `diagram`、部品間のやり取りは `sequence`、ディレクトリの階層は `tree` で記述します。[フロー図](.agents/skills/kh-html-explainer/SKILL.md#図の書式) · [シーケンス図](.agents/skills/kh-html-explainer/SKILL.md#シーケンス図の書式) · [ディレクトリツリー](.agents/skills/kh-html-explainer/SKILL.md#ディレクトリツリーの書式)
+- 状態遷移図・ER図・グラフ・タイムラインは、それぞれ `state`、`er`、`chart`、`timeline` のJSON入力からローカルで描画します。[入力例](.agents/skills/kh-html-explainer/SKILL.md#状態遷移er-図グラフタイムライン)
+- 簡易ガントチャートは Mermaid の `gantt` で、日付、工程、依存関係、進捗状態を記述します。対応する日単位の書式を変換器で読み取り、SVGを単一HTMLに埋め込みます。[リリース準備のサンプル原稿](examples/release-schedule.md)
+- 要点や警告は `callout`、原稿に書いた変更は `diff` で表示します。[書式と入力例](.agents/skills/kh-html-explainer/SKILL.md#要点警告と差分の書式)
+- Markdown の生 HTML、外部画像、外部 CSS、外部フォント、入力由来の JavaScript の実行を防ぎます。外部 URL はテキストとして保持します。 `#top`／`#section-1` 形式のリンクは文書内で動作します。
+- 変換時に CSS と SVG をインライン化し、CSP は固定の CSS と操作用スクリプトのハッシュだけを許可します。閲覧とキャッシュ済みの変換はローカルで完結します。
+- UTF-8 と入力サイズ、図の構造と参照を検証します。HTML は変換成功後に書き出し、既存の出力先は保護します。
+- 同じ原稿・同じ変換器・同じ Node/ICU 環境で、同じ内容の HTML が得られます。ファイル名、時刻、乱数は HTML に含めません。フォントの見た目は端末のシステムフォントに従います。
+
+## 原稿の警告
+
+変換時に本文の長い文・段落をチェックし、段落または手順の開始行を標準エラーに出します。日本語の目安は説明45文字、番号付き手順35文字、段落6文です。英語などの語数で数える文章は、説明25語、番号付き手順20語が目安です。見出し、表、コード、図と確認欄の入力、URL、参考リンクの一覧は長さの対象から外します。
+
+長さの指摘は警告です。文面を変えずにHTMLを生成し、標準出力には出力先のパスを表示します。1回の変換では最初の20件と残りの件数を表示します。
+
+## 保守
+
+```sh
+npm ci --ignore-scripts
+npm run build
+npm test
+```
+
+`scripts/` の読みやすいソースを編集し、`dist/` の変換器とライセンス表記を再生成して Git に含めます。npm への接続は依存を取得するときにだけ必要です。変換器は markdown-it と Dagre をバンドルしています。
+
+Markdown に執筆を集中させる方針は [answer-me-with-html v0.6.2](https://github.com/QingYunA/answer-me-with-html/tree/v0.6.2) を参考にしました。変換処理、テーマ、図の入力形式はこのリポジトリで保守します。
