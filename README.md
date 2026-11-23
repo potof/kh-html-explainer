@@ -37,14 +37,21 @@ open out/http-cache-validation.html
 
 ## AWS構成図
 
-[サンプル原稿](examples/aws-architecture-samples.md)には、API連携、マルチアカウント、DevOps、CloudWatch、ECSの5図があります。原稿に `@aws:ecs` などのアイコンIDを書くと、初回のみ固定バージョンの [AWS公式ZIP](https://aws.amazon.com/architecture/icons/) を `curl` で取得します。SHA-256で検証したZIP全体を保存し、再生成時はキャッシュから読み取ります。出力HTMLには使用したSVGだけを、サービスごとに1回埋め込みます。
+[Mermaidのサンプル原稿](examples/aws-mermaid.md)には、マルチアカウントとECSの構成例があります。`mermaid` ブロックに `flowchart` と `subgraph` を書くと、コンパクトな間隔で自動配置し、影のない枠線で境界を示します。[従来の原稿サンプル](examples/aws-architecture-samples.md)にある `aws` や `sequence` も引き続き使えます。
+
+Mermaidのフロー図を生成するには、リポジトリで初回に `npm ci --ignore-scripts` を実行し、ChromeまたはChromiumを用意します。macOSではネットワーク遮断にOS標準の `sandbox-exec` を使います。Linux（x64/arm64）ではPython 3と `libseccomp.so.2` が必要です。Chromeの実行ファイルを指定する場合は `KH_HTML_EXPLAINER_CHROMIUM` を、Skillをホームにコピーした場合は `KH_HTML_EXPLAINER_MERMAID_DIR` にリポジトリの `node_modules/mermaid` の絶対パスを設定できます。
+
+Chromiumのサンドボックスを起動できない隔離済みのCloud環境では、`KH_HTML_EXPLAINER_CHROMIUM_NO_SANDBOX=1` を指定できます。OSのネットワーク遮断はこの設定でも有効です。
 
 ```sh
+npm ci --ignore-scripts
 mkdir -p out
-node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-architecture-samples.md out/aws-architecture-samples.html
+node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-mermaid.md out/aws-mermaid.html
 ```
 
-キャッシュ先はMacでは `~/Library/Caches/html-explainer`、Linuxでは `${XDG_CACHE_HOME:-~/.cache}/html-explainer` です。Codex Cloudなどで保存先を指定する場合は `HTML_EXPLAINER_CACHE_DIR` を設定します。生成時の通信を禁止する場合は、入力ファイルの前に `--offline` を付けます。アイコンに必要なZIPがキャッシュにない場合は、エラーを表示して終了します。
+原稿に `icon: "aws:ecs"` などのアイコンIDを書くと、初回のみ固定バージョンの [AWS公式ZIP](https://aws.amazon.com/architecture/icons/) を `curl` で取得します。SHA-256で検証したZIP全体をキャッシュします。出力HTMLには使用したアイコンだけを、サービスごとに1回埋め込みます。
+
+キャッシュ先はMacでは `~/Library/Caches/html-explainer`、Linuxでは `${XDG_CACHE_HOME:-~/.cache}/html-explainer` です。Codex Cloudなどで保存先を指定する場合は `HTML_EXPLAINER_CACHE_DIR` を設定します。生成時の通信を禁止する場合は、入力ファイルの前に `--offline` を付けます。必要なアイコンのZIPがキャッシュにないときはエラーを表示します。完成HTMLには静的SVGが入り、保存済みのファイルはオフラインで閲覧できます。
 
 ## 原稿とセキュリティ
 
@@ -55,7 +62,7 @@ node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-architecture-
 - Markdown の生 HTML、外部画像、外部 CSS、外部フォント、入力由来の JavaScript の実行を防ぎます。外部 URL はテキストとして保持します。 `#top`／`#section-1` 形式のリンクは文書内で動作します。
 - 変換時に CSS と SVG をインライン化し、CSP は固定の CSS と操作用スクリプトのハッシュだけを許可します。閲覧とキャッシュ済みの変換はローカルで完結します。
 - UTF-8 と入力サイズ、図の構造と参照を検証します。HTML は変換成功後に書き出し、既存の出力先は保護します。
-- 同じ原稿・同じ変換器・同じ Node/ICU 環境で、同じ内容の HTML が得られます。ファイル名、時刻、乱数は HTML に含めません。フォントの見た目は端末のシステムフォントに従います。
+- 同じ原稿・同じ変換器・同じ Node/ICU 環境で、同じ内容の HTML が得られます。Mermaidのフロー図は、生成時のChromiumのバージョンとシステムフォントも揃えてください。ファイル名、時刻、乱数は HTML に含めません。
 
 ## 原稿の警告
 
@@ -72,5 +79,7 @@ npm test
 ```
 
 `scripts/` の読みやすいソースを編集し、`dist/` の変換器とライセンス表記を再生成して Git に含めます。npm への接続は依存を取得するときにだけ必要です。変換器は markdown-it と Dagre をバンドルしています。
+
+Mermaidは `package-lock.json` で固定し、フロー図の変換時にだけ読み込みます。バージョンを更新する場合は、`mermaid-flowchart.mjs` のELKの間隔調整とサンプルの表示を確認します。Chromiumを用意した環境では `KH_HTML_EXPLAINER_TEST_MERMAID=1 npm test` でフロー図の変換もテストします。
 
 Markdown に執筆を集中させる方針は [answer-me-with-html v0.6.2](https://github.com/QingYunA/answer-me-with-html/tree/v0.6.2) を参考にしました。変換処理、テーマ、図の入力形式はこのリポジトリで保守します。

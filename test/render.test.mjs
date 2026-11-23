@@ -15,7 +15,8 @@ function fixture(t, content) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const input = join(dir, 'source.md');
   writeFileSync(input, content);
-  const run = (name = 'page.html') => spawnSync(process.execPath, [cli, input, join(dir, name)], { encoding: 'utf8' });
+  const run = (name = 'page.html', flags = []) =>
+    spawnSync(process.execPath, [cli, ...flags, input, join(dir, name)], { encoding: 'utf8' });
   return { dir, run };
 }
 
@@ -217,7 +218,7 @@ test('renders Mermaid Gantt sections, statuses and dependencies with day boundar
     'テスト :crit, test, after build backout, 1d',
     '備え :monitor, 2026-12-01, until release',
     'section 公開', '公開 :milestone, release, after test, 0d',
-    '監視 :1d', '```', '', '```mermaid', 'flowchart TD', 'A --> B', '```', '',
+    '監視 :1d', '```', '', '```mermaid', 'sequenceDiagram', 'A->>B: Hello', '```', '',
   ].join('\n'));
   const result = run();
   assert.equal(result.status, 0, result.stderr);
@@ -236,7 +237,52 @@ test('renders Mermaid Gantt sections, statuses and dependencies with day boundar
   assert.match(html, />11\/26<\/tspan>/);
   assert.match(html, /準備 &lt;img src=x&gt;/);
   assert.doesNotMatch(html, /<img\b/);
-  assert.match(html, /class="language-mermaid">flowchart TD/);
+  assert.match(html, /class="language-mermaid">sequenceDiagram/);
+});
+
+test('rejects Mermaid flowchart directives and clicks without writing an output', (t) => {
+  for (const line of ['%%{init: {"theme":"dark"}}%%', 'click A "https://example.com"']) {
+    const { dir, run } = fixture(t, ['```mermaid', 'flowchart TB', 'A --> B', line, '```', ''].join('\n'));
+    const result = run('page.html', ['--offline']);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Markdown 1行目の図: Mermaid図には設定ディレクティブやクリック操作を指定できません/);
+    assert.equal(existsSync(join(dir, 'page.html')), false);
+  }
+});
+
+const chromiumTests = { skip: process.env.KH_HTML_EXPLAINER_TEST_MERMAID !== '1' && 'enable with KH_HTML_EXPLAINER_TEST_MERMAID=1' };
+
+test('pre-renders Mermaid flowcharts offline with static, distinct SVG references', chromiumTests, (t) => {
+  const { dir, run } = fixture(t, [
+    '## 構成', '', '```mermaid', '%% グループ', 'flowchart TB', 'accTitle: 構成図',
+    'accDescr: VPCの中での処理', 'subgraph network["アプリ VPC"]', '  subgraph zone["AZ A"]',
+    '    B{確認}', '  end', 'end', 'A[要求] -->|HTTPS| B', '```', '',
+    '```mermaid', 'graph LR', 'A[入力] -.-> B[出力]', '```', '',
+  ].join('\n'));
+  const result = run('page.html', ['--offline']);
+  assert.equal(result.status, 0, result.stderr);
+  const html = readFileSync(join(dir, 'page.html'), 'utf8');
+  assert.equal((html.match(/<figure class="diagram mermaid-flowchart"/g) ?? []).length, 2);
+  assert.match(html, /<figcaption id="diagram-1">構成図<\/figcaption>/);
+  assert.match(html, /<desc id="mermaid-1-description">VPCの中での処理<\/desc>/);
+  assert.match(html, /class="cluster mermaid-outer-boundary"/);
+  assert.match(html, /class="cluster mermaid-sub-boundary"/);
+  assert.match(html, /marker-end="url\(#mermaid-1-\d+\)"/);
+  assert.match(html, /marker-end="url\(#mermaid-2-\d+\)"/);
+  assert.doesNotMatch(html, /<foreignObject|<filter\b|<script[^>]*src=|<!--mermaid-/);
+  const again = run('again.html', ['--offline']);
+  assert.equal(again.status, 0, again.stderr);
+  assert.equal(readFileSync(join(dir, 'again.html'), 'utf8'), html);
+});
+
+test('rejects external images in Mermaid flowcharts', chromiumTests, (t) => {
+  const { dir, run } = fixture(t, [
+    '```mermaid', 'flowchart TB', 'A@{ img: "https://example.com/image.svg", label: "画像" }', '```', '',
+  ].join('\n'));
+  const result = run('page.html', ['--offline']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Markdown 1行目のMermaid図: 図には画像URLやクリック操作を指定できません/);
+  assert.equal(existsSync(join(dir, 'page.html')), false);
 });
 
 test('rejects missing and circular Mermaid Gantt dependencies', (t) => {

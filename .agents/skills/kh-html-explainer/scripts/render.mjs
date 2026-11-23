@@ -7,11 +7,12 @@ import { initializePage } from './browser.mjs';
 import { renderConfirmation } from './confirmation.mjs';
 import { renderDiagram } from './diagram.mjs';
 import { renderAws } from './aws.mjs';
-import { loadAwsIconSprite } from './aws-icons.mjs';
+import { loadAwsIcons, renderAwsIconSprite } from './aws-icons.mjs';
 import { renderEr, renderState } from './models.mjs';
 import { renderChart, renderTimeline } from './data-components.mjs';
 import { renderGantt } from './gantt.mjs';
 import { isMermaidGantt } from './gantt-input.mjs';
+import { isMermaidFlowchart, renderFlowcharts, validateFlowchartSource } from './mermaid-flowchart.mjs';
 import { renderSequence } from './sequence.mjs';
 import { renderTree } from './tree.mjs';
 import { renderCallout, renderDiff } from './review-blocks.mjs';
@@ -84,7 +85,11 @@ const blockRenderers = new Map([
 const defaultFence = markdown.renderer.rules.fence;
 function fenceType(token) {
   const info = token.info.trim();
-  return info === 'mermaid' && isMermaidGantt(token.content) ? 'gantt' : info;
+  if (info === 'mermaid') {
+    if (isMermaidGantt(token.content)) return 'gantt';
+    if (isMermaidFlowchart(token.content)) return 'mermaid-flowchart';
+  }
+  return info;
 }
 
 markdown.renderer.rules.fence = (tokens, index, options, env, renderer) => {
@@ -107,10 +112,16 @@ markdown.renderer.rules.fence = (tokens, index, options, env, renderer) => {
     }
   }
   const renderGraphic = graphicRenderers.get(type);
-  if (!renderGraphic) return defaultFence(tokens, index, options, env, renderer);
+  if (!renderGraphic && type !== 'mermaid-flowchart') return defaultFence(tokens, index, options, env, renderer);
   try {
     if (env.diagramCount === 16) throw new Error('図は文書あたり16件までです');
-    return renderGraphic(token.content, ++env.diagramCount, escape, env.awsIcons);
+    const diagramIndex = ++env.diagramCount;
+    if (!renderGraphic) {
+      validateFlowchartSource(token.content);
+      env.flowcharts.push({ source: token.content, index: diagramIndex, line: token.map[0] + 1 });
+      return `<!--mermaid-${diagramIndex}-->\n`;
+    }
+    return renderGraphic(token.content, diagramIndex, escape, env.awsIcons);
   } catch (error) {
     throw new Error(`Markdown ${token.map[0] + 1}行目の図: ${error.message}`, { cause: error });
   }
@@ -134,7 +145,7 @@ function commentField(id) {
 
 async function render(source, offline) {
   if (!source.trim() || source.includes('\0')) throw new Error('空の文書と NUL 文字は使用できません');
-  const env = { diagramCount: 0, confirmationCount: 0, awsIcons: new Set() };
+  const env = { diagramCount: 0, confirmationCount: 0, awsIcons: new Set(), flowcharts: [] };
   const tokens = markdown.parse(source, env);
   const warnings = writingWarnings(tokens);
   const heading = tokens[0]?.tag === 'h1' && tokens[1]?.type === 'inline' ? tokens.splice(0, 3)[1] : null;
@@ -162,7 +173,7 @@ async function render(source, offline) {
     const hasWideDiagram = body.some((token) => {
       if (token.type !== 'fence') return false;
       const type = fenceType(token);
-      return ['sequence', 'er', 'chart', 'gantt'].includes(type)
+      return ['sequence', 'er', 'chart', 'gantt', 'mermaid-flowchart'].includes(type)
         || (['diagram', 'state'].includes(type) && /"direction"\s*:\s*"LR"/.test(token.content));
     });
     const isReferences = position === sections.length - 1 && inlineText(tokens[index + 1]).trim() === '参考リンク';
@@ -176,7 +187,17 @@ ${renderBlocks(tokens.slice(index, index + 3))}${commentButton(id, `カード${p
 </section>\n`;
   });
 
-  const sprite = await loadAwsIconSprite(env.awsIcons, offline);
+  let icons;
+  const flowcharts = await renderFlowcharts(env.flowcharts, async ids => {
+    icons = await loadAwsIcons(new Set([...env.awsIcons, ...ids]), offline);
+    return icons;
+  });
+  const sprite = renderAwsIconSprite(icons ?? await loadAwsIcons(env.awsIcons, offline));
+  const figures = new Map(flowcharts.map(({ index, title, svg }) => [index, `<figure class="diagram mermaid-flowchart">
+<figcaption id="diagram-${index}">${escape(title)}</figcaption>
+<div class="scroll diagram-scroll" tabindex="0" role="region" aria-labelledby="diagram-${index}">${svg}</div>
+</figure>`]));
+  const article = (introduction + cards.join('')).replace(/<!--mermaid-(\d+)-->/g, (_, id) => figures.get(Number(id)));
   const html = `<!doctype html>
 <html lang="ja" data-html-explainer-mode="light">
 <head>
@@ -213,7 +234,7 @@ ${sprite}<main id="top" class="sheet">
 <span id="comment-status" role="status"></span>
 </div>
 <article>
-${introduction}${cards.join('')}</article>
+${article}</article>
 </main>
 <script>${script}</script>
 </body>

@@ -76,7 +76,7 @@ const shapeTags = /^(?:g|path|rect)$/;
 const renderAttributes = new Set(['d', 'fill', 'fill-rule', 'clip-rule', 'x', 'y', 'width', 'height', 'stroke', 'stroke-width', 'transform']);
 const paint = /^(?:#[\da-f]{3}|#[\da-f]{6}|#[\da-f]{8}|none|white)$/i;
 
-function symbolFromIcon(archive, id, entry) {
+function extractIcon(archive, id, entry) {
   // The offsets identify raw DEFLATE members in the exact archive verified above.
   const compressed = archive.subarray(entry.offset, entry.offset + entry.compressedSize);
   const svg = inflateRawSync(compressed, { maxOutputLength: entry.size }).toString('utf8');
@@ -113,15 +113,22 @@ function symbolFromIcon(archive, id, entry) {
     drawing += `<${tag}${safeAttrs}${empty}>`;
   }
   if (stack.length) throw new Error(`AWSアイコンのSVG構造が不正です (${id})`);
-  return `<symbol id="aws-icon-${id}" viewBox="${viewBox}">${drawing}</symbol>`;
+  return { viewBox, drawing };
 }
 
-export async function loadAwsIconSprite(ids, offline) {
-  if (!ids.size) return '';
+export async function loadAwsIcons(ids, offline) {
+  if (!ids.size) return new Map();
   const sorted = [...ids].sort();
   const unknown = sorted.filter(id => !Object.hasOwn(catalog.icons, id));
   if (unknown.length) throw new Error(`未登録のAWSアイコンIDです: ${unknown.join(', ')}`);
   const archive = await loadArchive(cacheDirectory(), offline);
-  const icons = sorted.map(id => symbolFromIcon(archive, id, catalog.icons[id])).join('');
-  return `<svg width="0" height="0" aria-hidden="true"><defs>${icons}</defs></svg>\n`;
+  return new Map(sorted.map(id => [id, extractIcon(archive, id, catalog.icons[id])]));
+}
+
+export function renderAwsIconSprite(icons) {
+  if (!icons.size) return '';
+  const symbols = [...icons].map(([id, { viewBox, drawing }]) => {
+    return `<symbol id="aws-icon-${id}" viewBox="${viewBox}">${drawing}</symbol>`;
+  }).join('');
+  return `<svg width="0" height="0" aria-hidden="true"><defs>${symbols}</defs></svg>\n`;
 }

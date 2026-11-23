@@ -56,6 +56,8 @@ SOFTWARE.
   --gantt-active-bar: #b6d6f7;
   --gantt-active-line: #5784b0;
   --gantt-delayed-bar: #c2414a;
+  --flowchart-group-line: #85858e;
+  --flowchart-node-line: #d4d4d8;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -86,6 +88,8 @@ SOFTWARE.
   --gantt-active-bar: #95bee9;
   --gantt-active-line: #bdd7f1;
   --gantt-delayed-bar: #ef8189;
+  --flowchart-group-line: #777780;
+  --flowchart-node-line: #56565e;
 }
 
 :root[data-html-explainer-size="90"] { font-size: 90%; }
@@ -223,12 +227,34 @@ tbody tr:nth-child(even) { background: var(--fill); }
 
 .diagram { margin: 1rem 0; border: 1px solid var(--line); border-radius: var(--radius); }
 figcaption { padding: 7px 12px; border-bottom: 1px solid var(--line); font: 600 .875rem/1.4 var(--sans); }
-.diagram svg { display: block; max-width: 100%; height: auto; margin-inline: auto; font: 14px var(--sans); background: var(--paper); }
-.diagram rect { rx: 6px; fill: var(--paper); stroke: var(--line); }
+.diagram .diagram-scroll > svg { display: block; max-width: 100%; height: auto; margin-inline: auto; font: 14px var(--sans); background: var(--paper); }
+.diagram:not(.mermaid-flowchart) rect { rx: 6px; fill: var(--paper); stroke: var(--line); }
 .route { fill: none; stroke: var(--muted); stroke-width: 1.3; }
 .arrowhead { fill: var(--muted); }
 .node-label { fill: var(--ink); font-weight: 600; }
 .edge-label { fill: var(--muted); stroke: var(--paper); stroke-width: 4px; paint-order: stroke; font-size: 12px; }
+
+.mermaid-flowchart .diagram-scroll > svg {
+  max-width: none;
+  font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
+}
+.mermaid-flowchart .cluster > rect { fill: var(--paper); stroke: var(--flowchart-group-line); stroke-width: .9px; }
+.mermaid-flowchart .mermaid-outer-boundary > rect { fill: var(--bg); }
+.mermaid-flowchart .mermaid-sub-boundary > rect { stroke-dasharray: 4 3; }
+.mermaid-flowchart :is(.cluster > rect, rect.basic) { rx: 6px; ry: 6px; }
+.mermaid-flowchart .node > .label-container { fill: var(--paper); stroke: var(--flowchart-node-line); stroke-width: 1px; }
+.mermaid-flowchart text { fill: var(--body-ink); }
+.mermaid-flowchart :is(.node, .icon-shape) .label text { text-anchor: middle; }
+.mermaid-flowchart .background { fill: none; stroke: none; }
+.mermaid-flowchart .edgeLabel .background { fill: var(--paper); }
+.mermaid-flowchart .flowchart-link { fill: none; stroke: var(--muted); }
+.mermaid-flowchart .edge-thickness-normal { stroke-width: 1px; }
+.mermaid-flowchart .edge-thickness-thick { stroke-width: 3.5px; }
+.mermaid-flowchart .edge-thickness-invisible { stroke-width: 0; }
+.mermaid-flowchart .edge-pattern-dotted:not([stroke-dasharray]) { stroke-dasharray: 2 2; }
+.mermaid-flowchart .edge-pattern-dashed:not([stroke-dasharray]) { stroke-dasharray: 3 2; }
+.mermaid-flowchart .marker { fill: var(--muted); stroke: var(--muted); }
+.mermaid-flowchart .marker.cross { fill: none; }
 
 .entity-divider, .chart-axis { fill: none; stroke: var(--line); }
 .entity-fields, .chart-text { fill: var(--body-ink); font-size: 12px; }
@@ -456,7 +482,7 @@ textarea {
   .document-tools { order: -1; }
   article { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .card--wide { grid-column: auto; }
-  .diagram svg { max-width: none; }
+  .diagram .diagram-scroll > svg { max-width: none; }
 }
 
 .card--aws { grid-column: 1 / -1; }

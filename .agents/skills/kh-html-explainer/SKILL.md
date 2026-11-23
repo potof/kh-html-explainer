@@ -25,7 +25,7 @@ description: 技術解説、調査結果、比較資料、既存のMarkdownを�
 | --- | --- |
 | 部品間の呼び出しと応答の順序 | `sequence` で、時系列を上から下に示す |
 | 分岐、処理の経路、部品の接続 | `diagram` で、関係を矢印で示す |
-| AWS の配置、アカウントや VPC の境界 | `aws` で、所属を枠、接続を矢印で示す |
+| AWS の配置、アカウントや VPC の境界 | Mermaidの `flowchart` と `subgraph` で、所属を枠、接続を矢印で示す |
 | 状態と、状態を変えるイベント | `state` で開始・終了と遷移条件を示す |
 | エンティティ、キー、多重度 | `er` でデータの持ち方と関係を示す |
 | 数値の比較や推移 | `chart` の棒または折れ線。単位を添え、例示はそう明記する |
@@ -68,7 +68,7 @@ description: 技術解説、調査結果、比較資料、既存のMarkdownを�
 ## HTML に変換する
 
 1. 原稿を UTF-8 の Markdown で保存する。図は下の書式を使う。フロー図は縦方向の `TB` がスマートフォンで読みやすい。左右の構成関係を示すときは `LR` を使う。
-2. この SKILL.md のあるディレクトリを基準に `dist/render.mjs` を Node.js 22 以上で実行する。出力先の親ディレクトリを作り、新しいファイル名を選ぶ。AWS公式アイコンを指定し、公式ZIPが未取得のときだけ `curl` で取得する。通信を禁止する場合は `--offline` を付ける。
+2. この SKILL.md のあるディレクトリを基準に `dist/render.mjs` を Node.js 22 以上で実行する。出力先の親ディレクトリを作り、新しいファイル名を選ぶ。Mermaidのフロー図を含む場合は下記の描画環境を用意する。AWS公式ZIPの初回取得を禁止する場合は `--offline` を付ける。
 3. 原稿の長さに関する警告が出た場合は、表示された行の段落や手順を確認する。新規執筆や編集の依頼なら読みやすさを見直す。変換だけの依頼なら原稿を保持する。警告だけの場合、HTML は生成済み。
 4. HTML を添付できる場合はファイルとして返し、ワークスペースでは絶対パスのリンクを返す。元の Markdown は再生成用に残す。
 
@@ -100,6 +100,26 @@ node /absolute/path/to/kh-html-explainer/dist/render.mjs input.md output.html
 
 ## AWS構成図の書式
 
+```mermaid
+flowchart TB
+  accTitle: Webサービスの構成
+  client["利用者"]
+  subgraph app["アプリ VPC"]
+    ingress@{ icon: "aws:alb", w: 28, h: 28, label: "ALB" }
+    backend@{ icon: "aws:ecs", w: 28, h: 28, label: "ECSサービス" }
+  end
+  client -->|HTTPS| ingress
+  ingress -->|HTTP| backend
+```
+
+- Mermaid標準の `flowchart`（別名 `graph`）と `subgraph` を使う。OU、AZと書いた境界は破線で表示する。図の名前は `accTitle:`、読み上げ用の説明は `accDescr:` で指定できる。
+- `@{ icon: "aws:ID", w: 28, h: 28, label: "サービス名" }` はMermaidのアイコンノード。設定ディレクティブ、外部画像、クリック操作は使わない。図の色、影、配置間隔は共通テーマに従う。
+- 変換には固定版Mermaidをリポジトリで `npm ci --ignore-scripts` で準備し、ローカルのChromeまたはChromiumを使う。Linux（x64/arm64）ではPython 3と `libseccomp.so.2` も用意する。macOSでは標準の `sandbox-exec` を使う。フロー図は変換時に静的SVGにする。
+- アイコンIDは `alb`、`api-gateway`、`cloudtrail`、`cloudwatch`、`codebuild`、`codepipeline`、`ecr`、`ecs`、`fargate`、`lambda`、`organizations`、`s3`、`sns`、`sqs`。一覧にないサービスはラベルだけで描く。
+- アイコンを指定した場合、初回に限りAWS公式ZIPを取得する。検証済みのZIPをキャッシュして再利用する。変換時に通信できない場合はキャッシュを用意し `--offline` を付ける。図を配置するときのChromiumの通信はOS側で遮断する。
+
+### 既存の `aws` 原稿
+
 ```aws
 title: Webサービスの構成
 node client 利用者
@@ -112,8 +132,6 @@ ingress -> backend HTTP
 
 - `scope 種類 ID ラベル` は境界、`node ID ラベル` はリソース。半角空白2個で所属を表す。境界の種類は `organization`、`account`、`ou`、`vpc`、`az`、`subnet`、`task`、`service`。矢印は `始点 -> 終点` とし、必要なら末尾にラベルを書く。
 - アイコンが必要なら、境界・ノード・図のタイトルのラベルの先頭に `@aws:ID` を付ける。シーケンス図では `participants: @aws:api-gateway HTTP API, @aws:lambda Lambda` のように書く。メッセージの参加者名には `@aws:ID` を付けない。
-- アイコンIDは `alb`、`api-gateway`、`cloudtrail`、`cloudwatch`、`codebuild`、`codepipeline`、`ecr`、`ecs`、`fargate`、`lambda`、`organizations`、`s3`、`sns`、`sqs`。一覧にないサービスはラベルだけで描く。
-- 初めてアイコンを使うときにAWS公式ZIPを取得し、検証したZIPを丸ごと再利用する。使うSVGだけをHTMLに含める。
 
 ## シーケンス図の書式
 

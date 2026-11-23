@@ -14,7 +14,7 @@ export function initializePage() {
   let selectedSize = sizes.indexOf(100);
   const fontButtons = document.querySelectorAll('[data-font-step]');
   const sizeStatus = document.querySelector('#font-size-status');
-  const diagrams = document.querySelectorAll('.diagram svg');
+  const diagrams = document.querySelectorAll('.diagram .diagram-scroll > svg');
   const article = document.querySelector('article');
   const resizableCards = [...article.querySelectorAll(':scope > section.card:not(.card--references)')];
 
