@@ -25,7 +25,7 @@ description: 技術解説、調査結果、比較資料、既存のMarkdownを�
 | --- | --- |
 | 部品間の呼び出しと応答の順序 | Mermaidの `sequenceDiagram` に `autonumber` を入れ、時系列を上から下に示す |
 | 分岐、処理の経路、部品の接続 | Mermaidの `flowchart` で、関係を矢印で示す |
-| AWS の配置、アカウントや VPC の境界 | Mermaidの `flowchart` と `subgraph` で、所属を枠、接続を矢印で示す |
+| AWS の配置、アカウントや VPC の境界 | Mermaidの `flowchart` と `subgraph` で、所属を枠、接続を矢印で示す。対応サービスには `aws:ID` のアイコンを指定する |
 | 状態と、状態を変えるイベント | Mermaidの `stateDiagram-v2` で開始・終了と遷移条件を示す |
 | エンティティ、キー、多重度 | Mermaidの `erDiagram` でデータの持ち方と関係を示す |
 | 数値の比較や推移 | Mermaidの `xychart` の棒または折れ線。単位を添え、例示はそう明記する |
@@ -105,10 +105,12 @@ flowchart TB
 ```
 
 - Mermaid標準の `flowchart`（別名 `graph`）と `subgraph` を使う。OU、AZと書いた境界は破線で表示する。図の名前は `accTitle:`、読み上げ用の説明は `accDescr:` で指定できる。
-- `@{ icon: "aws:ID", w: 28, h: 28, label: "サービス名" }` はMermaidのアイコンノード。設定ディレクティブ、外部画像、クリック操作は使わない。図の色、影、配置間隔は共通テーマに従う。
+- 対応サービスには `@{ icon: "aws:ID", w: 28, h: 28, label: "サービス名" }` でAWS公式アイコンを指定する。通常のノードでサービス名を書いた場合も、シンプルなAWS構成図では対応するアイコンを補う。設定ディレクティブ、外部画像、クリック操作は使わない。
+- HTMLではサービス名とアイコンを白い枠に入れる。アカウントやVPCなどの外枠は薄いグレー、入れ子の境界は少し濃いグレーにする。OUとAZは破線で区別する。対応ブランチを各アカウントに1本ずつ配る横向きの構成では、経路を平行に揃える。特殊な図形やクラス指定などを使うフロー図にはMermaidの描画を使う。
 - 変換には固定版Mermaidをリポジトリで `npm ci --ignore-scripts` で準備し、ローカルのChromeまたはChromiumを使う。Linux（x64/arm64）ではPython 3と `libseccomp.so.2` も用意する。macOSでは標準の `sandbox-exec` を使う。フロー図は変換時に静的SVGにする。
-- アイコンIDは `alb`、`api-gateway`、`cloudtrail`、`cloudwatch`、`codebuild`、`codepipeline`、`ecr`、`ecs`、`fargate`、`lambda`、`organizations`、`s3`、`sns`、`sqs`。一覧にないサービスはラベルだけで描く。
-- アイコンを指定した場合、初回に限りAWS公式ZIPを取得する。検証済みのZIPをキャッシュして再利用する。変換時に通信できない場合はキャッシュを用意し `--offline` を付ける。図を配置するときのChromiumの通信はOS側で遮断する。
+- アイコンIDは `alb`、`api-gateway`、`cloudfront`、`cloudtrail`、`cloudwatch`、`codebuild`、`codecommit`、`codepipeline`、`dynamodb`、`ec2`、`ecr`、`ecs`、`eventbridge`、`fargate`、`iam`、`lambda`、`organizations`、`rds`、`route53`、`s3`、`sns`、`sqs`、`vpc`、`waf`。一覧にないサービスはラベルで描く。
+- アイコンが必要でキャッシュが空なら、変換器が固定版のAWS公式ZIPを丸ごと取得する。初回の取得が許可されている場合は `--offline` を付けずに実行する。SHA-256で検証したZIP全体を保持し、以後は使用するSVGだけをHTMLに埋め込む。
+- 別の端末やCloudで通信禁止のまま変換する場合は、検証済みのZIPをその環境のキャッシュ先に置いて `--offline` を付ける。ZIPがなければエラーになる。図の配置と完成HTMLの閲覧はオフラインで行える。一般のMermaidプレビューからAWSアイコンを見るには、対応するアイコンパックが必要になる。
 
 ### 既存の `aws` 原稿
 

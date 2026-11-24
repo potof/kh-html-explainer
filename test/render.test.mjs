@@ -285,6 +285,33 @@ test('rejects external images in Mermaid flowcharts', chromiumTests, (t) => {
   assert.equal(existsSync(join(dir, 'page.html')), false);
 });
 
+test('boxes AWS Mermaid flows, aligns branch lanes, and requires a cache for recognized service icons', chromiumTests, (t) => {
+  const source = readFileSync(new URL('../examples/aws-codecommit-cicd.md', import.meta.url), 'utf8')
+    .replace(/@\{[^\n]+\}/g, '["配備"]')
+    .replaceAll('CodeCommit', 'Git')
+    .replace('accTitle:', 'accTitle: AWS');
+  const { dir } = fixture(t, source);
+  const input = join(dir, 'source.md');
+  const cache = join(dir, 'empty-cache');
+  const run = name => spawnSync(process.execPath, [cli, '--offline', input, join(dir, name)], {
+    encoding: 'utf8', env: { ...process.env, HTML_EXPLAINER_CACHE_DIR: cache },
+  });
+  const boxed = run('boxed.html');
+  assert.equal(boxed.status, 0, boxed.stderr);
+  const html = readFileSync(join(dir, 'boxed.html'), 'utf8');
+  assert.match(html, /<figure class="diagram aws-boxed">/);
+  assert.match(html, /class="aws-boundary aws-service aws-nested"/);
+  assert.equal((html.match(/<rect class="aws-node"/g) ?? []).length, 6);
+  assert.equal((html.match(/class="route aws-route-dotted" d="M\d+ \d+H\d+"/g) ?? []).length, 2);
+  assert.equal(existsSync(cache), false);
+
+  writeFileSync(input, source.replace('["配備"]', '["CodePipeline"]'));
+  const missing = run('missing.html');
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /AWS公式アイコンZIPがキャッシュにありません/);
+  assert.equal(existsSync(join(dir, 'missing.html')), false);
+});
+
 test('rejects missing and circular Mermaid Gantt dependencies', (t) => {
   for (const [rows, message] of [
     [['開始 :start, after unknown, 1d'], /未定義の依存タスクID/],

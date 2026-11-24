@@ -6,7 +6,7 @@ import MarkdownIt from 'markdown-it';
 import { initializePage } from './browser.mjs';
 import { renderConfirmation, renderConfirmationSpec } from './confirmation.mjs';
 import { renderDiagram } from './diagram.mjs';
-import { renderAws } from './aws.mjs';
+import { renderAws, renderAwsGraph } from './aws.mjs';
 import { loadAwsIcons, renderAwsIconSprite } from './aws-icons.mjs';
 import { renderEr, renderState } from './models.mjs';
 import { chartValues, renderChart, renderTimeline, renderTimelineEvents } from './data-components.mjs';
@@ -215,7 +215,8 @@ ${renderBlocks(tokens.slice(index, index + 3))}${commentButton(id, `カード${p
     return icons;
   });
   const sprite = renderAwsIconSprite(icons ?? await loadAwsIcons(env.awsIcons, offline));
-  const figures = new Map(diagrams.map(({ index, title, kind, svg, plots, unit }) => [index, `<figure class="diagram mermaid-${kind}">
+  const figures = new Map(diagrams.map(({ index, aws, title, kind, svg, plots, unit }) => [
+    index, aws ? renderAwsGraph(aws, index, escape) : `<figure class="diagram mermaid-${kind}">
 <figcaption id="diagram-${index}">${escape(title)}</figcaption>
 <div class="scroll diagram-scroll" tabindex="0" role="region" aria-labelledby="diagram-${index}">${svg}</div>
 ${plots?.length ? chartValues(plots, unit, escape) : ''}</figure>`]));

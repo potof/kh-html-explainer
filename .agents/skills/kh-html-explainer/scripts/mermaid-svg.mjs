@@ -9,7 +9,8 @@ export async function inspectDiagrams(jobs) {
       const { db, type } = await mermaid.mermaidAPI.getDiagramFromText(job.source);
       if (!types[job.kind].includes(type)) throw new Error('不明なMermaid図です');
       const icons = Object.create(null);
-      for (const vertex of job.kind === 'flowchart' ? db.getVertices().values() : []) {
+      const nodes = job.kind === 'flowchart' ? [...db.getVertices().values()] : [];
+      for (const vertex of nodes) {
         if (vertex.img || vertex.link || vertex.haveCallback) throw new Error('図には画像URLやクリック操作を指定できません');
         if (!vertex.icon) continue;
         if (!/^aws:[a-z0-9-]+$/.test(vertex.icon)) throw new Error('アイコンは aws:サービスID の形式で指定してください');
@@ -17,10 +18,27 @@ export async function inspectDiagrams(jobs) {
       }
       const title = db.getAccTitle?.() || db.getDiagramTitle?.() || captions[job.kind];
       const description = db.getAccDescription?.();
-      const grouped = job.kind === 'flowchart' && db.getSubGraphs().length > 0;
+      const groups = job.kind === 'flowchart' ? db.getSubGraphs() : [];
+      const groupIds = new Set(groups.map(group => group.id));
+      const plainNodes = nodes.filter(node => !groupIds.has(node.id));
+      const edges = job.kind === 'flowchart' ? db.getEdges() : [];
+      const flow = job.kind === 'flowchart' ? {
+        direction: db.getDirection(),
+        groups: groups.map(({ id, title, nodes }) => ({ id, name: title, members: nodes })),
+        nodes: plainNodes.map(({ id, text, domId }) => ({ id, name: text, icon: icons[domId] })),
+        edges: edges.map(({ start, end, text, stroke }) => [start, end, text, stroke]),
+        simple: !db.getClasses().size && !edges.defaultStyle && !edges.defaultInterpolate
+          && groups.every(group => !group.dir && !group.classes.length && group.labelType !== 'markdown')
+          && plainNodes.every(node => !node.classes.length && !node.styles.length
+            && (!node.type || ['square', 'rect'].includes(node.type))
+            && !node.form && (node.icon || node.labelType !== 'markdown'))
+          && edges.every(edge => edge.type === 'arrow_point' && ['normal', 'dotted', 'thick'].includes(edge.stroke)
+            && !edge.style?.length && !edge.interpolate && !edge.animate && !edge.animation
+            && !edge.classes.length && edge.length === 1 && edge.labelType !== 'markdown'),
+      } : undefined;
       const chart = job.kind === 'xychart' ? db.getXYChartData() : undefined;
       const plots = chart?.plots.map(({ title, type, data }) => ({ title, type, data }));
-      parsed.push({ ...job, title, description, icons, grouped, plots, unit: chart?.yAxis.title });
+      parsed.push({ ...job, title, description, icons, flow, grouped: groups.length > 0, plots, unit: chart?.yAxis.title });
     } catch (error) {
       throw new Error(`Markdown ${job.line}行目のMermaid図: ${error.message.split('\n')[0]}`);
     }

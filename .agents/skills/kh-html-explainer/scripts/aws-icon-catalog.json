@@ -12,6 +12,12 @@
       "size": 1764,
       "svg": "Arch_Amazon-API-Gateway_48.svg"
     },
+    "cloudfront": {
+      "offset": 9546653,
+      "compressedSize": 1622,
+      "size": 3619,
+      "svg": "Arch_Amazon-CloudFront_48.svg"
+    },
     "cloudtrail": {
       "offset": 3014683,
       "compressedSize": 1067,
@@ -30,11 +36,29 @@
       "size": 3167,
       "svg": "Arch_AWS-CodeBuild_48.svg"
     },
+    "codecommit": {
+      "offset": 3950317,
+      "compressedSize": 1296,
+      "size": 3273,
+      "svg": "Arch_AWS-CodeCommit_48.svg"
+    },
     "codepipeline": {
       "offset": 3921484,
       "compressedSize": 798,
       "size": 1690,
       "svg": "Arch_AWS-CodePipeline_48.svg"
+    },
+    "dynamodb": {
+      "offset": 1678362,
+      "compressedSize": 2336,
+      "size": 5419,
+      "svg": "Arch_Amazon-DynamoDB_48.svg"
+    },
+    "ec2": {
+      "offset": 788455,
+      "compressedSize": 721,
+      "size": 1749,
+      "svg": "Arch_Amazon-EC2_48.svg"
     },
     "ecr": {
       "offset": 4527475,
@@ -48,11 +72,23 @@
       "size": 2403,
       "svg": "Arch_Amazon-Elastic-Container-Service_48.svg"
     },
+    "eventbridge": {
+      "offset": 8334247,
+      "compressedSize": 1633,
+      "size": 3916,
+      "svg": "Arch_Amazon-EventBridge_48.svg"
+    },
     "fargate": {
       "offset": 4516623,
       "compressedSize": 1596,
       "size": 4061,
       "svg": "Arch_AWS-Fargate_48.svg"
+    },
+    "iam": {
+      "offset": 5371795,
+      "compressedSize": 941,
+      "size": 2148,
+      "svg": "Arch_AWS-Identity-and-Access-Management_48.svg"
     },
     "lambda": {
       "offset": 828685,
@@ -65,6 +101,18 @@
       "compressedSize": 959,
       "size": 2565,
       "svg": "Arch_AWS-Organizations_48.svg"
+    },
+    "rds": {
+      "offset": 1666511,
+      "compressedSize": 1080,
+      "size": 2596,
+      "svg": "Arch_Amazon-RDS_48.svg"
+    },
+    "route53": {
+      "offset": 9510526,
+      "compressedSize": 2746,
+      "size": 6681,
+      "svg": "Arch_Amazon-Route-53_48.svg"
     },
     "s3": {
       "offset": 7915677,
@@ -83,6 +131,18 @@
       "compressedSize": 2340,
       "size": 5877,
       "svg": "Arch_Amazon-Simple-Queue-Service_48.svg"
+    },
+    "vpc": {
+      "offset": 9517910,
+      "compressedSize": 1336,
+      "size": 3329,
+      "svg": "Arch_Amazon-Virtual-Private-Cloud_48.svg"
+    },
+    "waf": {
+      "offset": 5339112,
+      "compressedSize": 1726,
+      "size": 3670,
+      "svg": "Arch_AWS-WAF_48.svg"
     }
   },
   "release": "2026-07-31",

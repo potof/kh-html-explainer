@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withOfflineChromium } from './mermaid-chromium.mjs';
 import { inspectDiagrams, exportDiagrams } from './mermaid-svg.mjs';
+import { awsFlowchartFromMermaid } from './aws-flowchart.mjs';
 
 export function mermaidKind(source) {
   const first = source.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('%%'));
@@ -93,13 +94,28 @@ export async function renderMermaid(jobs, loadIcons) {
     await evaluate(runtime + '\n;void 0');
     await evaluate(`void mermaid.initialize(${JSON.stringify(settings)})`);
     const parsed = await evaluate(`(${inspectDiagrams.toString()})(${JSON.stringify(jobs)})`);
-    const ids = new Set(parsed.flatMap(job => Object.values(job.icons)));
+    const native = [];
+    const boxed = [];
+    const ids = new Set();
+    for (const job of parsed) {
+      for (const id of Object.values(job.icons)) ids.add(id);
+      const aws = awsFlowchartFromMermaid(job);
+      if (!aws) {
+        native.push(job);
+        continue;
+      }
+      boxed.push({ index: job.index, aws });
+      for (const { icon } of aws.entries.values()) if (icon) ids.add(icon);
+    }
     const icons = await loadIcons(ids);
-    const pack = Object.fromEntries([...ids].map(id => {
+    if (!native.length) return boxed;
+    const nativeIds = new Set(native.flatMap(job => Object.values(job.icons)));
+    const pack = Object.fromEntries([...nativeIds].map(id => {
       const { viewBox, drawing } = icons.get(id);
       const [left, top, width, height] = viewBox.split(' ').map(Number);
       return [id, { left, top, width, height, body: drawing }];
     }));
-    return evaluate(`(${exportDiagrams.toString()})(${JSON.stringify(parsed)},${JSON.stringify(pack)},${JSON.stringify(settings)})`);
+    const standard = await evaluate(`(${exportDiagrams.toString()})(${JSON.stringify(native)},${JSON.stringify(pack)},${JSON.stringify(settings)})`);
+    return [...boxed, ...standard];
   });
 }

@@ -58,6 +58,8 @@ SOFTWARE.
   --gantt-delayed-bar: #c2414a;
   --flowchart-group-line: #85858e;
   --flowchart-node-line: #d4d4d8;
+  --aws-area: #f5f5f6;
+  --aws-subarea: #ededf0;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -90,6 +92,8 @@ SOFTWARE.
   --gantt-delayed-bar: #ef8189;
   --flowchart-group-line: #777780;
   --flowchart-node-line: #56565e;
+  --aws-area: #1a1a1e;
+  --aws-subarea: #232328;
 }
 
 :root[data-html-explainer-size="90"] { font-size: 90%; }
@@ -569,9 +573,14 @@ textarea {
 .card--aws { grid-column: 1 / -1; }
 .cards-fit > section.card--aws { flex: 0 0 100%; }
 .card--aws .diagram svg { max-width: none; }
-.diagram .aws-boundary { fill: var(--paper); stroke: var(--muted); stroke-width: .8px; rx: 7px; }
-.diagram :is(.aws-organization, .aws-vpc, .aws-service) { fill: var(--bg); }
-.diagram :is(.aws-ou, .aws-az) { stroke-dasharray: 4 3; }
+.diagram.aws-boxed .aws-boundary { fill: var(--aws-area); stroke: var(--flowchart-group-line); stroke-width: .85px; rx: 7px; }
+.diagram.aws-boxed .aws-nested { fill: var(--aws-subarea); }
+.diagram.aws-boxed :is(.aws-task, .aws-subnet) { fill: var(--aws-area); stroke: var(--flowchart-node-line); }
+.diagram.aws-boxed :is(.aws-ou, .aws-az) { stroke-dasharray: 4 3; }
+.diagram.aws-boxed .aws-node { fill: var(--paper); stroke: var(--flowchart-node-line); }
+.aws-boxed .node-label { fill: var(--body-ink); font-weight: 500; }
+.aws-boxed .aws-route-dotted { stroke-dasharray: 4 3; }
+.aws-boxed .aws-route-thick { stroke-width: 2.6px; }
 .aws-boundary-name { fill: var(--body-ink); font-weight: 600; font-size: 12px; stroke: var(--paper); stroke-width: 2px; paint-order: stroke; }
 .diagram .aws-title-icon {
   display: inline-block;

@@ -38,7 +38,7 @@ open out/http-cache-validation.html
 
 ## AWS構成図
 
-[Mermaidのサンプル原稿](examples/aws-mermaid.md)には、マルチアカウントとECSの構成例があります。`mermaid` ブロックに `flowchart` と `subgraph` を書くと、コンパクトな間隔で自動配置し、影のない枠線で境界を示します。[従来の原稿サンプル](examples/aws-architecture-samples.md)にある `aws` や `sequence` も引き続き使えます。
+[Mermaidのサンプル原稿](examples/aws-mermaid.md)には、マルチアカウントとECSの構成例があります。シンプルなAWS構成図では、サービス名とアイコンを白い枠に収め、外枠と入れ子を薄いグレーの濃淡で区別します。[環境別CodePipelineの例](examples/aws-codecommit-cicd.md)は、ブランチと対応するパイプラインを同じ高さに表示します。[従来の原稿サンプル](examples/aws-architecture-samples.md)にある `aws` や `sequence` も引き続き使えます。
 
 ガント以外のMermaid図を生成するには、リポジトリで初回に `npm ci --ignore-scripts` を実行し、ChromeまたはChromiumを用意します。macOSではネットワーク遮断にOS標準の `sandbox-exec` を使います。Linux（x64/arm64）ではPython 3と `libseccomp.so.2` が必要です。Chromeの実行ファイルを指定する場合は `KH_HTML_EXPLAINER_CHROMIUM` を、Skillをホームにコピーした場合は `KH_HTML_EXPLAINER_MERMAID_DIR` にリポジトリの `node_modules/mermaid` の絶対パスを設定できます。
 
@@ -50,9 +50,9 @@ mkdir -p out
 node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-mermaid.md out/aws-mermaid.html
 ```
 
-原稿に `icon: "aws:ecs"` などのアイコンIDを書くと、初回のみ固定バージョンの [AWS公式ZIP](https://aws.amazon.com/architecture/icons/) を `curl` で取得します。SHA-256で検証したZIP全体をキャッシュします。出力HTMLには使用したアイコンだけを、サービスごとに1回埋め込みます。
+原稿に `icon: "aws:ecs"` などのアイコンIDを書くと、対応するAWS公式アイコンを使います。シンプルなAWS構成図では、ノードの対応サービス名からもアイコンを補います。アイコンが必要でキャッシュが空なら、`--offline` を付けずに変換すると `curl` が固定版の公式ZIP全体を取得します。SHA-256で検証したZIPをキャッシュし、次回以降はそのZIPを再利用します。出力HTMLに埋め込むのは使用したアイコンだけです。[AWS公式アイコン](https://aws.amazon.com/architecture/icons/)
 
-キャッシュ先はMacでは `~/Library/Caches/html-explainer`、Linuxでは `${XDG_CACHE_HOME:-~/.cache}/html-explainer` です。Codex Cloudなどで保存先を指定する場合は `HTML_EXPLAINER_CACHE_DIR` を設定します。生成時の通信を禁止する場合は、入力ファイルの前に `--offline` を付けます。必要なアイコンのZIPがキャッシュにないときはエラーを表示します。完成HTMLには静的SVGが入り、保存済みのファイルはオフラインで閲覧できます。
+キャッシュ先はMacでは `~/Library/Caches/html-explainer`、Linuxでは `${XDG_CACHE_HOME:-~/.cache}/html-explainer` です。別の端末やCodex Cloudで通信を禁止する場合は、検証済みの `aws-architecture-icons-2026-07-31.zip` をその環境のキャッシュ先に置くか、保存先を `HTML_EXPLAINER_CACHE_DIR` で指定して `--offline` を付けます。必要なZIPがキャッシュにないときはエラーを表示します。完成HTMLには静的SVGが入り、ZIPのない環境でもオフラインで閲覧できます。
 
 ## 原稿とセキュリティ
 
