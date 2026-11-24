@@ -4,18 +4,19 @@ import { dirname, extname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import MarkdownIt from 'markdown-it';
 import { initializePage } from './browser.mjs';
-import { renderConfirmation } from './confirmation.mjs';
+import { renderConfirmation, renderConfirmationSpec } from './confirmation.mjs';
 import { renderDiagram } from './diagram.mjs';
 import { renderAws } from './aws.mjs';
 import { loadAwsIcons, renderAwsIconSprite } from './aws-icons.mjs';
 import { renderEr, renderState } from './models.mjs';
-import { renderChart, renderTimeline } from './data-components.mjs';
+import { chartValues, renderChart, renderTimeline, renderTimelineEvents } from './data-components.mjs';
 import { renderGantt } from './gantt.mjs';
 import { isMermaidGantt } from './gantt-input.mjs';
-import { isMermaidFlowchart, renderFlowcharts, validateFlowchartSource } from './mermaid-flowchart.mjs';
+import { mermaidKind, renderMermaid, validateMermaidSource } from './mermaid.mjs';
 import { renderSequence } from './sequence.mjs';
 import { renderTree } from './tree.mjs';
 import { renderCallout, renderDiff } from './review-blocks.mjs';
+import { applyMarkdownComponents } from './markdown-components.mjs';
 import { writingWarnings } from './writing-warnings.mjs';
 import css from './theme.css';
 
@@ -26,6 +27,11 @@ const { escapeHtml: escape } = markdown.utils;
 function inlineText(token) {
   return token.children.map((child) => child.type.endsWith('break') ? ' ' : child.content).join('');
 }
+
+markdown.core.ruler.push('explainer_components', state => {
+  state.env.warnings = writingWarnings(state.tokens);
+  applyMarkdownComponents(state, inlineText);
+});
 
 markdown.renderer.rules.image = (tokens, index) => {
   const alt = inlineText(tokens[index]);
@@ -63,11 +69,31 @@ for (const type of ['th_open', 'td_open']) {
 }
 
 markdown.renderer.rules.blockquote_open = (tokens, index, options, env, renderer) => {
-  if (/^\*\*確認事項\*\*(?:[\s：:]|$)/.test(tokens[index + 2]?.content)) {
+  const first = tokens[index + 2]?.content;
+  const callout = /^\*\*(警告|要点|補足)(?=\*\*|[\s：:—])/.exec(first)?.[1];
+  if (callout) {
+    const kinds = { 警告: 'warning', 要点: 'key', 補足: 'note' };
+    tokens[index].attrSet('class', 'callout callout--' + kinds[callout]);
+  } else if (/^\*\*確認事項\*\*(?:[\s：:]|$)/.test(first)) {
     tokens[index].attrSet('class', 'confirmation');
   }
   return renderer.renderToken(tokens, index, options);
 };
+
+markdown.renderer.rules.tree_component = (tokens, index, options, env, renderer) =>
+  `<div class="directory-tree" role="region" aria-label="ディレクトリツリー">\n${renderer.render(tokens[index].meta.list, options, env)}</div>\n`;
+markdown.renderer.rules.timeline_component = (tokens, index) => renderTimelineEvents(tokens[index].meta, escape);
+
+function confirmationAt(token, env, renderForm) {
+  try {
+    if (env.confirmationCount === 32) throw new Error('確認事項は文書あたり32件までです');
+    return renderForm(++env.confirmationCount);
+  } catch (error) {
+    throw new Error(`Markdown ${token.map[0] + 1}行目の確認事項: ${error.message}`, { cause: error });
+  }
+}
+markdown.renderer.rules.confirmation_component = (tokens, index, options, env) =>
+  confirmationAt(tokens[index], env, id => renderConfirmationSpec(tokens[index].meta, id, escape));
 
 markdown.renderer.rules.paragraph_open = (tokens, index, options, env, renderer) => {
   const token = tokens[index];
@@ -87,7 +113,6 @@ function fenceType(token) {
   const info = token.info.trim();
   if (info === 'mermaid') {
     if (isMermaidGantt(token.content)) return 'gantt';
-    if (isMermaidFlowchart(token.content)) return 'mermaid-flowchart';
   }
   return info;
 }
@@ -96,12 +121,7 @@ markdown.renderer.rules.fence = (tokens, index, options, env, renderer) => {
   const token = tokens[index];
   const type = fenceType(token);
   if (type === 'confirm') {
-    try {
-      if (env.confirmationCount === 32) throw new Error('確認事項は文書あたり32件までです');
-      return renderConfirmation(token.content, ++env.confirmationCount, escape);
-    } catch (error) {
-      throw new Error(`Markdown ${token.map[0] + 1}行目の確認事項: ${error.message}`, { cause: error });
-    }
+    return confirmationAt(token, env, id => renderConfirmation(token.content, id, escape));
   }
   const renderBlock = blockRenderers.get(type);
   if (renderBlock) {
@@ -112,13 +132,14 @@ markdown.renderer.rules.fence = (tokens, index, options, env, renderer) => {
     }
   }
   const renderGraphic = graphicRenderers.get(type);
-  if (!renderGraphic && type !== 'mermaid-flowchart') return defaultFence(tokens, index, options, env, renderer);
+  const kind = type === 'mermaid' ? mermaidKind(token.content) : undefined;
+  if (!renderGraphic && !kind) return defaultFence(tokens, index, options, env, renderer);
   try {
     if (env.diagramCount === 16) throw new Error('図は文書あたり16件までです');
     const diagramIndex = ++env.diagramCount;
-    if (!renderGraphic) {
-      validateFlowchartSource(token.content);
-      env.flowcharts.push({ source: token.content, index: diagramIndex, line: token.map[0] + 1 });
+    if (kind) {
+      validateMermaidSource(token.content);
+      env.mermaid.push({ source: token.content, kind, index: diagramIndex, line: token.map[0] + 1 });
       return `<!--mermaid-${diagramIndex}-->\n`;
     }
     return renderGraphic(token.content, diagramIndex, escape, env.awsIcons);
@@ -145,9 +166,9 @@ function commentField(id) {
 
 async function render(source, offline) {
   if (!source.trim() || source.includes('\0')) throw new Error('空の文書と NUL 文字は使用できません');
-  const env = { diagramCount: 0, confirmationCount: 0, awsIcons: new Set(), flowcharts: [] };
+  const env = { diagramCount: 0, confirmationCount: 0, awsIcons: new Set(), mermaid: [] };
   const tokens = markdown.parse(source, env);
-  const warnings = writingWarnings(tokens);
+  const { warnings } = env;
   const heading = tokens[0]?.tag === 'h1' && tokens[1]?.type === 'inline' ? tokens.splice(0, 3)[1] : null;
   const title = (heading && inlineText(heading).trim()) || '技術資料';
   const sections = [];
@@ -173,7 +194,8 @@ async function render(source, offline) {
     const hasWideDiagram = body.some((token) => {
       if (token.type !== 'fence') return false;
       const type = fenceType(token);
-      return ['sequence', 'er', 'chart', 'gantt', 'mermaid-flowchart'].includes(type)
+      return ['sequence', 'er', 'chart', 'gantt'].includes(type)
+        || (type === 'mermaid' && mermaidKind(token.content) !== undefined)
         || (['diagram', 'state'].includes(type) && /"direction"\s*:\s*"LR"/.test(token.content));
     });
     const isReferences = position === sections.length - 1 && inlineText(tokens[index + 1]).trim() === '参考リンク';
@@ -188,15 +210,15 @@ ${renderBlocks(tokens.slice(index, index + 3))}${commentButton(id, `カード${p
   });
 
   let icons;
-  const flowcharts = await renderFlowcharts(env.flowcharts, async ids => {
+  const diagrams = await renderMermaid(env.mermaid, async ids => {
     icons = await loadAwsIcons(new Set([...env.awsIcons, ...ids]), offline);
     return icons;
   });
   const sprite = renderAwsIconSprite(icons ?? await loadAwsIcons(env.awsIcons, offline));
-  const figures = new Map(flowcharts.map(({ index, title, svg }) => [index, `<figure class="diagram mermaid-flowchart">
+  const figures = new Map(diagrams.map(({ index, title, kind, svg, plots, unit }) => [index, `<figure class="diagram mermaid-${kind}">
 <figcaption id="diagram-${index}">${escape(title)}</figcaption>
 <div class="scroll diagram-scroll" tabindex="0" role="region" aria-labelledby="diagram-${index}">${svg}</div>
-</figure>`]));
+${plots?.length ? chartValues(plots, unit, escape) : ''}</figure>`]));
   const article = (introduction + cards.join('')).replace(/<!--mermaid-(\d+)-->/g, (_, id) => figures.get(Number(id)));
   const html = `<!doctype html>
 <html lang="ja" data-html-explainer-mode="light">

@@ -33,7 +33,9 @@ export function renderDiff(source, escape) {
     else if (line.startsWith('-')) kind = 'removed';
     else if (line.startsWith('~ ')) kind = 'changed';
 
-    return `<span class="diff-row diff-${kind}">${escape(line)}</span>`;
+    const marker = kind === 'header' ? '' : `<span class="diff-line-marker">${kind === 'context' ? (line.startsWith(' ') ? ' ' : '') : escape(line[0])}</span>`;
+    const content = (kind === 'context' && !line.startsWith(' ')) || kind === 'header' ? line : line.slice(1);
+    return `<span class="diff-row diff-${kind}">${marker}<span class="diff-line-content">${escape(content)}</span></span>`;
   });
   return `<pre class="change-diff" tabindex="0" aria-label="差分"><code class="language-diff">${rows.join('\n')}${source.endsWith('\n') ? '\n' : ''}</code></pre>\n`;
 }

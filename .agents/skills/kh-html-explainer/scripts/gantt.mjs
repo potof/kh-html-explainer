@@ -90,9 +90,11 @@ function dateTable(tasks, escape) {
 
 export function renderGantt(source, index, escape) {
   const { title, tasks: parsedTasks, formatAxis } = parseGantt(source);
-  const tasks = parsedTasks.map(task => ({
-    ...task, progress: Object.keys(progressLabels).find(tag => task.tags.has(tag)),
-  }));
+  const tasks = parsedTasks.map(task => {
+    const name = task.name.replace(/\s*(?:（遅延）|\(遅延\))$/, '').trim();
+    if (name && name !== task.name && !task.tags.has('done')) return { ...task, name, progress: 'delayed' };
+    return { ...task, progress: task.tags.has('done') ? 'done' : task.tags.has('active') ? 'active' : undefined };
+  });
   const start = Math.min(...tasks.map(task => task.start));
   const end = Math.max(...tasks.map(task => task.end));
   const finish = Math.max(start + 1, ...tasks.map(task => task.finish));

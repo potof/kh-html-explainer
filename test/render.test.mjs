@@ -9,6 +9,7 @@ import { test } from 'node:test';
 
 const cli = fileURLToPath(new URL('../.agents/skills/kh-html-explainer/dist/render.mjs', import.meta.url));
 const sample = readFileSync(new URL('../examples/http-cache-validation.md', import.meta.url));
+const chromiumTests = { skip: process.env.KH_HTML_EXPLAINER_TEST_MERMAID !== '1' && 'enable with KH_HTML_EXPLAINER_TEST_MERMAID=1' };
 
 function fixture(t, content) {
   const dir = mkdtempSync(join(tmpdir(), 'html-explainer-'));
@@ -20,7 +21,7 @@ function fixture(t, content) {
   return { dir, run };
 }
 
-test('renders both directions, the table, and a deterministic standalone document', (t) => {
+test('renders both directions, the table, and a deterministic standalone document', chromiumTests, (t) => {
   const { dir, run } = fixture(t, sample);
   assert.equal(run().status, 0);
   assert.equal(run('again.html').status, 0);
@@ -53,7 +54,7 @@ test('renders both directions, the table, and a deterministic standalone documen
   assert.match(html, /<pre><code class="language-http">/);
   assert.match(html, /<pre><code class="language-sh">/);
   assert.equal((html.match(/<svg[^>]* role="img"/g) ?? []).length, 2);
-  assert.match(html, /id="arrow-2"/);
+  assert.match(html, /marker-end="url\(#mermaid-2-\d+\)"/);
   const style = html.match(/<style>([\s\S]+?)<\/style>/)[1];
   const hash = createHash('sha256').update(style).digest('base64');
   assert.ok(html.includes(`style-src 'sha256-${hash}'`));
@@ -218,7 +219,7 @@ test('renders Mermaid Gantt sections, statuses and dependencies with day boundar
     'テスト :crit, test, after build backout, 1d',
     '備え :monitor, 2026-12-01, until release',
     'section 公開', '公開 :milestone, release, after test, 0d',
-    '監視 :1d', '```', '', '```mermaid', 'sequenceDiagram', 'A->>B: Hello', '```', '',
+    '監視 :1d', '```', '', '```mermaid', 'pie', '"監視" : 1', '```', '',
   ].join('\n'));
   const result = run();
   assert.equal(result.status, 0, result.stderr);
@@ -237,7 +238,7 @@ test('renders Mermaid Gantt sections, statuses and dependencies with day boundar
   assert.match(html, />11\/26<\/tspan>/);
   assert.match(html, /準備 &lt;img src=x&gt;/);
   assert.doesNotMatch(html, /<img\b/);
-  assert.match(html, /class="language-mermaid">sequenceDiagram/);
+  assert.match(html, /class="language-mermaid">pie/);
 });
 
 test('rejects Mermaid flowchart directives and clicks without writing an output', (t) => {
@@ -249,8 +250,6 @@ test('rejects Mermaid flowchart directives and clicks without writing an output'
     assert.equal(existsSync(join(dir, 'page.html')), false);
   }
 });
-
-const chromiumTests = { skip: process.env.KH_HTML_EXPLAINER_TEST_MERMAID !== '1' && 'enable with KH_HTML_EXPLAINER_TEST_MERMAID=1' };
 
 test('pre-renders Mermaid flowcharts offline with static, distinct SVG references', chromiumTests, (t) => {
   const { dir, run } = fixture(t, [
@@ -303,8 +302,8 @@ test('renders delayed Mermaid Gantt tasks and keeps completed rows filled', (t) 
     '```mermaid', 'gantt', '%% delayed: finished',
     '承認 :done, finished, 2026-11-26, 1d',
     '進行中の作業 :active, current, after finished, 1d',
-    '遅れた作業 :crit, active, late, after current, 1d',
-    '%% delayed: late', '```', '',
+    '遅れた作業（遅延） :crit, active, late, after current, 1d',
+    '%% delayed: current', '```', '',
   ].join('\n'));
   const result = run();
   assert.equal(result.status, 0, result.stderr);
@@ -331,11 +330,57 @@ test('renders callouts, marked changes, and annotated paragraph anchors safely',
   assert.match(html, /<p data-source-line="3">対象になる段落。<\/p>/);
   assert.match(html, /id="toggle-paragraph-review" aria-pressed="false" hidden/);
   assert.match(html, /class="callout callout--warning"/);
-  assert.match(html, /class="diff-row diff-header">\+\+\+ b\/new\.txt/);
-  assert.match(html, /class="diff-row diff-added">\+ &lt;iframe src=x&gt;/);
-  assert.match(html, /class="diff-row diff-removed">- old/);
-  assert.match(html, /class="diff-row diff-changed">~ 条件を更新/);
+  assert.match(html, /class="diff-row diff-header"><span class="diff-line-content">\+\+\+ b\/new\.txt/);
+  assert.match(html, /class="diff-row diff-added"><span class="diff-line-marker">\+<\/span><span class="diff-line-content"> &lt;iframe src=x&gt;/);
+  assert.match(html, /class="diff-row diff-removed"><span class="diff-line-marker">-<\/span><span class="diff-line-content"> old/);
+  assert.match(html, /class="diff-row diff-changed"><span class="diff-line-marker">~<\/span><span class="diff-line-content"> 条件を更新/);
   assert.doesNotMatch(html, /<(?:iframe|img)\b|<script><\/strong>/);
+});
+
+test('renders opt-in Markdown sections with the original components and leaves ordinary blocks alone', (t) => {
+  const source = [
+    '## 表とツリー', '', '| 日付 | 出来事 |', '| --- | --- |', '| 1日目 | 通常の表 |', '',
+    '**タイムライン**', '', '| 日付 | 出来事 | 補足 |', '| --- | --- | --- |', '| 2日目 | 検証 | <img src=x> |', '',
+    '- 通常の項目', '', '**ディレクトリツリー**', '', '- `src/`', '  - `index.mjs` — 変換入口', '',
+    '> **警告 — 停止条件**', '>', '> 失敗時は止める。', '',
+    '> **確認事項**', '>', '> どちらにしますか？', '>', '> 1. A', '> 2. B', '',
+    '> **確認事項**', '>', '> どれを調べますか？', '>', '> - [ ] A', '> - [ ] B', '',
+    '> **確認事項**', '>', '> 理由は何ですか？', '>', '> 回答：', '',
+    '> **確認事項** 手作業で確かめる。',
+  ].join('\n');
+  const { dir, run } = fixture(t, source);
+  const result = run();
+  assert.equal(result.status, 0, result.stderr);
+  const html = readFileSync(join(dir, 'page.html'), 'utf8');
+  assert.equal((html.match(/<figure class="timeline">/g) ?? []).length, 1);
+  assert.match(html, /<table>[\s\S]+<td>通常の表<\/td>/);
+  assert.equal((html.match(/class="directory-tree"/g) ?? []).length, 1);
+  assert.match(html, /<ul>\s*<li>通常の項目<\/li>/);
+  assert.match(html, /<code>index.mjs<\/code><span class="tree-note">変換入口<\/span>/);
+  assert.match(html, /<blockquote class="callout callout--warning">/);
+  assert.match(html, /<blockquote class="confirmation">/);
+  assert.match(html, /type="radio" name="confirmation-1"/);
+  assert.match(html, /type="checkbox" name="confirmation-2"/);
+  assert.match(html, /<textarea data-confirmation-answer/);
+  assert.doesNotMatch(html, /<img\b/);
+});
+
+test('renders Mermaid sequences with numbers, state and ER diagrams, and a chart with its data', chromiumTests, (t) => {
+  const source = readFileSync(new URL('../examples/portable-components.md', import.meta.url));
+  const { dir, run } = fixture(t, source);
+  const result = run('page.html', ['--offline']);
+  assert.equal(result.status, 0, result.stderr);
+  const html = readFileSync(join(dir, 'page.html'), 'utf8');
+  for (const kind of ['sequence', 'state', 'er', 'xychart']) {
+    assert.match(html, new RegExp(`class="diagram mermaid-${kind}"`));
+  }
+  assert.equal((html.match(/class="sequence-number-disc"/g) ?? []).length, 4);
+  assert.match(html, /class="sequenceNumber">4<\/text>/);
+  assert.match(html, /<summary>数値一覧<\/summary>[\s\S]+<td>20<\/td>/);
+  assert.doesNotMatch(html, /<filter\b|<foreignObject\b|<script[^>]*src=|<!--mermaid-/);
+  const repeat = run('repeat.html', ['--offline']);
+  assert.equal(repeat.status, 0, repeat.stderr);
+  assert.equal(readFileSync(join(dir, 'repeat.html'), 'utf8'), html);
 });
 
 test('labels cards after Z without changing heading anchors', (t) => {

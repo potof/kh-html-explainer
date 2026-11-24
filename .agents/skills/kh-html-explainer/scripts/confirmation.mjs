@@ -10,7 +10,10 @@ export function renderConfirmation(source, index, escape) {
     || Object.keys(spec).some((key) => !['question', 'type', 'options', 'hint'].includes(key))) {
     throw new Error('確認事項のフィールドが不正です');
   }
-  const { question, type, options, hint } = spec;
+  return renderConfirmationSpec(spec, index, escape);
+}
+
+export function renderConfirmationSpec({ question, type, options, hint }, index, escape) {
   if (!text(question, 160) || (hint !== undefined && !text(hint, 240))) {
     throw new Error('question は160文字、hint は240文字までの1行テキストにしてください');
   }

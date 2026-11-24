@@ -3,11 +3,18 @@ import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withOfflineChromium } from './mermaid-chromium.mjs';
-import { inspectFlowcharts, exportFlowcharts } from './mermaid-svg.mjs';
+import { inspectDiagrams, exportDiagrams } from './mermaid-svg.mjs';
 
-export function isMermaidFlowchart(source) {
+export function mermaidKind(source) {
   const first = source.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('%%'));
-  return /^(?:flowchart|graph)(?:\s|$)/.test(first ?? '');
+  const syntax = first?.match(/^[\w-]+(?=\s|;|$)/)?.[0];
+  switch (syntax) {
+    case 'flowchart': case 'graph': return 'flowchart';
+    case 'sequenceDiagram': return 'sequence';
+    case 'stateDiagram': case 'stateDiagram-v2': return 'state';
+    case 'erDiagram': return 'er';
+    case 'xychart': case 'xychart-beta': return 'xychart';
+  }
 }
 
 function replaceSetting(source, from, to) {
@@ -63,21 +70,29 @@ const settings = {
     edgeLabelBackground: '#fff',
   },
   flowchart: { htmlLabels: false, useMaxWidth: false, curve: 'linear', nodeSpacing: 22, rankSpacing: 36, padding: 6 },
+  sequence: { mirrorActors: false, diagramMarginX: 12, diagramMarginY: 10, actorMargin: 37, width: 83, height: 32,
+    boxMargin: 6, boxTextMargin: 4, noteMargin: 6, messageMargin: 24, bottomMarginAdj: 4,
+    actorFontSize: 13, messageFontSize: 12, noteFontSize: 12, showSequenceNumbers: true },
+  state: { diagramPadding: 8, padding: 5, nodeSpacing: 20, rankSpacing: 25, minNodeWidth: 0 },
+  er: { diagramPadding: 8, entityPadding: 6, minEntityWidth: 64, minEntityHeight: 34, nodeSpacing: 24, rankSpacing: 32 },
+  xyChart: { width: 356, height: 170, showTitle: false,
+    xAxis: { labelFontSize: 12, titleFontSize: 12, labelPadding: 4 },
+    yAxis: { labelFontSize: 12, titleFontSize: 12, labelPadding: 4 } },
 };
 
-export function validateFlowchartSource(source) {
+export function validateMermaidSource(source) {
   if (Buffer.byteLength(source) > 16 * 1024) throw new Error('Mermaid図は1件あたり16 KiBまでです');
-  if (/%%\s*\{|(?:^|;)\s*click\s+/im.test(source)) throw new Error('Mermaid図には設定ディレクティブやクリック操作を指定できません');
+  if (/%%\s*\{|(?:^|;)\s*(?:click|link|links)\s+/im.test(source)) throw new Error('Mermaid図には設定ディレクティブやクリック操作を指定できません');
 }
 
-export async function renderFlowcharts(jobs, loadIcons) {
+export async function renderMermaid(jobs, loadIcons) {
   if (!jobs.length) return [];
   const runtime = await readRuntime();
   return withOfflineChromium(async evaluate => {
     // Separate evaluations keep raw Markdown out of the trusted Mermaid script.
     await evaluate(runtime + '\n;void 0');
     await evaluate(`void mermaid.initialize(${JSON.stringify(settings)})`);
-    const parsed = await evaluate(`(${inspectFlowcharts.toString()})(${JSON.stringify(jobs)})`);
+    const parsed = await evaluate(`(${inspectDiagrams.toString()})(${JSON.stringify(jobs)})`);
     const ids = new Set(parsed.flatMap(job => Object.values(job.icons)));
     const icons = await loadIcons(ids);
     const pack = Object.fromEntries([...ids].map(id => {
@@ -85,6 +100,6 @@ export async function renderFlowcharts(jobs, loadIcons) {
       const [left, top, width, height] = viewBox.split(' ').map(Number);
       return [id, { left, top, width, height, body: drawing }];
     }));
-    return evaluate(`(${exportFlowcharts.toString()})(${JSON.stringify(parsed)},${JSON.stringify(pack)})`);
+    return evaluate(`(${exportDiagrams.toString()})(${JSON.stringify(parsed)},${JSON.stringify(pack)},${JSON.stringify(settings)})`);
   });
 }

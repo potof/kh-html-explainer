@@ -75,7 +75,7 @@ function parseTask(line, context, section) {
   return { name, id, context, section, tags, startSpec, endSpec };
 }
 
-function resolveTasks(specs, delayed) {
+function resolveTasks(specs) {
   const byId = new Map();
   const resolved = new Map();
   const pending = new Set();
@@ -83,10 +83,6 @@ function resolveTasks(specs, delayed) {
     if (id === undefined) continue;
     check(!byId.has(id), context + 'のタスクIDが重複しています');
     byId.set(id, index);
-  }
-  for (const [id, context] of delayed) {
-    check(byId.has(id), context + 'に未定義の遅延タスクIDがあります');
-    specs[byId.get(id)].tags.add('delayed');
   }
   function target(id, context) {
     check(byId.has(id), context + 'に未定義の依存タスクIDがあります');
@@ -135,18 +131,10 @@ function parseMermaid(lines) {
   let formatAxis;
   let section;
   const specs = [];
-  const delayed = new Map();
   for (const [index, line] of lines.entries()) {
     if (!line) continue;
     const context = 'ガントブロック' + (index + 1) + '行目';
     check(!line.startsWith('%%{'), context + 'のMermaid設定指令は使用できません');
-    const delay = line.match(/^%%\s+delayed:\s*(.*)$/);
-    if (delay) {
-      const id = delay[1];
-      check(idPattern.test(id), context + 'は「%% delayed: タスクID」の形式で指定してください');
-      delayed.set(id, context);
-      continue;
-    }
     if (line.startsWith('%%') || line === 'gantt') continue;
     const command = line.match(/^(title|dateFormat|axisFormat|section)\s+(.+)$/);
     if (command) {
@@ -167,7 +155,7 @@ function parseMermaid(lines) {
     specs.push(parseTask(line, context, section));
   }
   assertCount(specs);
-  return { title, tasks: resolveTasks(specs, delayed), formatAxis };
+  return { title, tasks: resolveTasks(specs), formatAxis };
 }
 
 export function isMermaidGantt(source) {

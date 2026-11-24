@@ -16,8 +16,7 @@ gantt
 
     section 実装・検証
     実装 :active, build, 2026-11-27, 6d
-    切り戻し手順 :active, backout, 2026-12-01, 2d
-    %% delayed: backout
+    切り戻し手順（遅延） :active, backout, 2026-12-01, 2d
     結合テスト :crit, test, after build review, 2d
     監視の準備 :monitor, 2026-12-02, until release
 

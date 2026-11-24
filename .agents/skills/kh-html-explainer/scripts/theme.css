@@ -228,33 +228,64 @@ tbody tr:nth-child(even) { background: var(--fill); }
 .diagram { margin: 1rem 0; border: 1px solid var(--line); border-radius: var(--radius); }
 figcaption { padding: 7px 12px; border-bottom: 1px solid var(--line); font: 600 .875rem/1.4 var(--sans); }
 .diagram .diagram-scroll > svg { display: block; max-width: 100%; height: auto; margin-inline: auto; font: 14px var(--sans); background: var(--paper); }
-.diagram:not(.mermaid-flowchart) rect { rx: 6px; fill: var(--paper); stroke: var(--line); }
+.diagram:not([class*="mermaid-"]) rect { rx: 6px; fill: var(--paper); stroke: var(--line); }
 .route { fill: none; stroke: var(--muted); stroke-width: 1.3; }
 .arrowhead { fill: var(--muted); }
 .node-label { fill: var(--ink); font-weight: 600; }
 .edge-label { fill: var(--muted); stroke: var(--paper); stroke-width: 4px; paint-order: stroke; font-size: 12px; }
 
-.mermaid-flowchart .diagram-scroll > svg {
+[class*="mermaid-"].diagram .diagram-scroll > svg {
   max-width: none;
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
+  margin-block: .25rem;
 }
 .mermaid-flowchart .cluster > rect { fill: var(--paper); stroke: var(--flowchart-group-line); stroke-width: .9px; }
 .mermaid-flowchart .mermaid-outer-boundary > rect { fill: var(--bg); }
 .mermaid-flowchart .mermaid-sub-boundary > rect { stroke-dasharray: 4 3; }
 .mermaid-flowchart :is(.cluster > rect, rect.basic) { rx: 6px; ry: 6px; }
 .mermaid-flowchart .node > .label-container { fill: var(--paper); stroke: var(--flowchart-node-line); stroke-width: 1px; }
-.mermaid-flowchart text { fill: var(--body-ink); }
+.diagram[class*="mermaid-"] text { fill: var(--body-ink); }
 .mermaid-flowchart :is(.node, .icon-shape) .label text { text-anchor: middle; }
-.mermaid-flowchart .background { fill: none; stroke: none; }
-.mermaid-flowchart .edgeLabel .background { fill: var(--paper); }
-.mermaid-flowchart .flowchart-link { fill: none; stroke: var(--muted); }
-.mermaid-flowchart .edge-thickness-normal { stroke-width: 1px; }
-.mermaid-flowchart .edge-thickness-thick { stroke-width: 3.5px; }
-.mermaid-flowchart .edge-thickness-invisible { stroke-width: 0; }
-.mermaid-flowchart .edge-pattern-dotted:not([stroke-dasharray]) { stroke-dasharray: 2 2; }
-.mermaid-flowchart .edge-pattern-dashed:not([stroke-dasharray]) { stroke-dasharray: 3 2; }
-.mermaid-flowchart .marker { fill: var(--muted); stroke: var(--muted); }
+.diagram[class*="mermaid-"] .background { fill: none; stroke: none; }
+.diagram[class*="mermaid-"] .edgeLabel .background { fill: var(--paper); }
+.diagram[class*="mermaid-"] :is(.flowchart-link, .transition, .relationshipLine) { fill: none; stroke: var(--muted); }
+.diagram[class*="mermaid-"] .edge-thickness-normal { stroke-width: 1.2px; }
+.diagram[class*="mermaid-"] .edge-thickness-thick { stroke-width: 3.5px; }
+.diagram[class*="mermaid-"] .edge-thickness-invisible { stroke-width: 0; }
+.diagram[class*="mermaid-"] .edge-pattern-dotted:not([stroke-dasharray]) { stroke-dasharray: 2 2; }
+.diagram[class*="mermaid-"] .edge-pattern-dashed:not([stroke-dasharray]) { stroke-dasharray: 4 3; }
+.diagram[class*="mermaid-"] .marker { fill: var(--muted); stroke: var(--muted); }
 .mermaid-flowchart .marker.cross { fill: none; }
+.mermaid-flowchart .node .text-inner-tspan { font-weight: 600; }
+.mermaid-flowchart .edgeLabel { font-size: 12px; }
+.mermaid-sequence :is(rect.actor, rect.labelBox, rect.note, rect[class^="activation"]) {
+  fill: var(--fill); stroke: var(--flowchart-node-line); rx: 5px;
+}
+.mermaid-sequence .actor-line { stroke: var(--flowchart-group-line); stroke-dasharray: 4 4; }
+.mermaid-sequence :is(.messageLine0, .messageLine1, .loopLine) { fill: none; stroke: var(--muted); stroke-width: 1.3px; }
+.mermaid-sequence .messageLine1 { stroke-dasharray: 4 3; }
+.mermaid-sequence marker { fill: var(--muted); stroke: var(--muted); }
+.mermaid-sequence :is(marker circle, .sequence-number-disc) { fill: var(--muted); stroke: none; }
+.mermaid-sequence text.actor { text-anchor: middle; font-size: 13px; }
+.mermaid-sequence text.messageText { font-size: 13px; }
+.mermaid-sequence text.sequenceNumber { fill: var(--paper); font-size: 10px; }
+.mermaid-state .node > :is(.label-container, .outer-path) {
+  fill: var(--paper); stroke: var(--flowchart-node-line);
+}
+.mermaid-state .node > rect { rx: 6px; }
+.mermaid-state :is(circle.state-start, circle.state-end, marker) { fill: var(--muted); stroke: var(--muted); }
+.mermaid-er .outer-path { fill: var(--paper); stroke: var(--flowchart-node-line); }
+.mermaid-er .marker { fill: none; }
+.mermaid-er .marker :is(circle, path) { fill: var(--paper); stroke: var(--muted); }
+.mermaid-er .divider { fill: none; stroke: var(--line); }
+.mermaid-er .row-rect-even { fill: var(--fill); }
+.mermaid-er .row-rect-odd { fill: var(--paper); }
+.mermaid-er .label.name text { font-weight: 600; }
+.mermaid-xychart .background rect { fill: var(--paper); }
+.mermaid-xychart.diagram .diagram-scroll > svg { max-width: 100%; }
+.mermaid-xychart :is(.axis-line, .axisl-line, .ticks) path { stroke: var(--line); }
+.mermaid-xychart [class^="bar-plot"] rect { fill: var(--muted); }
+.mermaid-xychart [class^="line-plot"] path { fill: none; stroke: var(--muted); }
 
 .entity-divider, .chart-axis { fill: none; stroke: var(--line); }
 .entity-fields, .chart-text { fill: var(--body-ink); font-size: 12px; }
@@ -315,10 +346,15 @@ figcaption { padding: 7px 12px; border-bottom: 1px solid var(--line); font: 600 
 .callout-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: .15rem .55rem; color: var(--ink); }
 .callout-kind { font-size: .75rem; color: var(--muted); }
 .callout p { margin: .3rem 0 0; }
+blockquote.callout { color: var(--body-ink); }
 
-.change-diff { padding-inline: 0; }
-.diff-row { display: inline-block; min-width: 100%; padding-inline: 14px; vertical-align: top; }
-.diff-header { color: var(--muted); }
+.change-diff { padding: 0; }
+.change-diff code { display: block; min-width: max-content; white-space: normal; }
+.diff-row { display: grid; grid-template-columns: 1.5rem auto; min-width: 100%; padding: 2px 12px; }
+.diff-line-marker { font-weight: 700; }
+.diff-line-content { white-space: pre; }
+.diff-header { color: var(--muted); background: var(--fill); }
+.diff-header .diff-line-content { grid-column: span 2; }
 .diff-added { background: var(--added-fill); color: var(--added-ink); }
 .diff-removed { background: var(--removed-fill); color: var(--removed-ink); }
 .diff-changed { background: var(--changed-fill); color: var(--changed-ink); }

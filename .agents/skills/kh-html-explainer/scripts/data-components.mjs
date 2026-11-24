@@ -2,7 +2,10 @@ import { check, label, parseInput, record } from './component-input.mjs';
 import { diagramFigure, svgText, wrapLabel } from './diagram.mjs';
 
 export function renderTimeline(source, escape) {
-  const { title, events } = parseInput(source, ['title', 'events']);
+  return renderTimelineEvents(parseInput(source, ['title', 'events']), escape);
+}
+
+export function renderTimelineEvents({ title, events }, escape) {
   check(label(title, 100), 'title は100文字までの1行テキストです');
   check(Array.isArray(events) && events.length >= 1 && events.length <= 24, 'events は1〜24件です');
   const items = events.map((event) => {
@@ -12,6 +15,15 @@ export function renderTimeline(source, escape) {
       + (event.note ? `<p>${escape(event.note)}</p>` : '') + '</li>';
   });
   return `<figure class="timeline"><figcaption>${escape(title)}</figcaption><ol>${items.join('')}</ol></figure>\n`;
+}
+
+export function chartValues(plots, unit, escape) {
+  const sections = plots.map(({ title, type, data }, index) => {
+    const rows = data.map(([name, value]) => `<tr><th scope="row">${escape(String(name))}</th><td>${escape(String(value))}</td></tr>`).join('');
+    const caption = plots.length > 1 ? `<caption>${escape(title || `${type === 'bar' ? '棒' : '折れ線'} ${index + 1}`)}</caption>` : '';
+    return `<table>${caption}<thead><tr><th scope="col">項目</th><th scope="col">${escape(unit || '値')}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  });
+  return `<details class="chart-values"><summary>数値一覧</summary>${sections.join('\n')}</details>`;
 }
 
 function numberText(value) {
@@ -35,9 +47,7 @@ export function renderChart(source, index, escape) {
   const result = type === 'bar' ? barChart(values, low, high, escape) : lineChart(values, low, high, escape);
   const description = values.map(([name, value]) => `${name}: ${value}${unit ?? ''}`).join('。');
   const figure = diagramFigure({ title: fullTitle, index, description, ...result }, escape);
-  const rows = values.map(([name, value]) => `<tr><th scope="row">${escape(name)}</th><td>${value}</td></tr>`).join('');
-  const table = `<details class="chart-values"><summary>数値一覧</summary><table><thead><tr><th scope="col">項目</th><th scope="col">${unit ? escape(unit) : '値'}</th></tr></thead><tbody>${rows}</tbody></table></details>`;
-  return figure.replace('</figure>', `${table}</figure>`);
+  return figure.replace('</figure>', () => `${chartValues([{ data: values }], unit, escape)}</figure>`);
 }
 
 function barChart(values, low, high, escape) {
