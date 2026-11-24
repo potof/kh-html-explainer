@@ -32,7 +32,7 @@ export function renderConfirmationSpec({ question, type, options, hint }, index,
   const inputs = type === 'text'
     ? `<label>回答<textarea data-confirmation-answer rows="2" maxlength="2000"${description}></textarea></label>`
     : options.map((option) =>
-      `<label class="confirmation-choice"><input data-confirmation-answer type="${type === 'single' ? 'radio' : 'checkbox'}" name="${id}" value="${escape(option.trim())}"> <span>${escape(option.trim())}</span></label>`
+      `<label class="confirmation-choice"><input data-confirmation-answer type="${type === 'single' ? 'radio' : 'checkbox'}" name="${id}" value="${escape(option.trim())}"><span class="confirmation-indicator" aria-hidden="true"></span><span>${escape(option.trim())}</span></label>`
     ).join('\n');
   return `<fieldset class="confirmation confirmation-form"${description}>
 <legend><span class="confirmation-tag">確認事項</span><span class="confirmation-question">${escape(question.trim())}</span></legend>

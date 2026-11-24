@@ -77,6 +77,7 @@ test('renders a sequence and a nested directory tree with inert labels', (t) => 
   assert.equal(result.status, 0, result.stderr);
   const html = readFileSync(join(dir, 'page.html'), 'utf8');
   assert.match(html, /class="card card--wide" data-panel-id="A"/);
+  assert.match(html, /<figure class="diagram sequence">/);
   assert.match(html, /class="route sequence-reply"[^>]*marker-end="url\(#arrow-1\)"/);
   assert.equal((html.match(/<path class="sequence-lifeline"/g) ?? []).length, 2);
   assert.match(html, /<code>src\/<\/code><ul><li><code>index\.mjs<\/code>/);
@@ -341,6 +342,8 @@ test('renders opt-in Markdown sections with the original components and leaves o
   const source = [
     '## 表とツリー', '', '| 日付 | 出来事 |', '| --- | --- |', '| 1日目 | 通常の表 |', '',
     '**タイムライン**', '', '| 日付 | 出来事 | 補足 |', '| --- | --- | --- |', '| 2日目 | 検証 | <img src=x> |', '',
+    '**タイムライン**', '', '| 時刻 | 予定 |', '| --- | --- |', '| 10:00 | 見学 |', '',
+    '| 時刻 | 予定 |', '| --- | --- |', '| 12:00 | 昼食 |', '',
     '- 通常の項目', '', '**ディレクトリツリー**', '', '- `src/`', '  - `index.mjs` — 変換入口', '',
     '> **警告 — 停止条件**', '>', '> 失敗時は止める。', '',
     '> **確認事項**', '>', '> どちらにしますか？', '>', '> 1. A', '> 2. B', '',
@@ -352,8 +355,10 @@ test('renders opt-in Markdown sections with the original components and leaves o
   const result = run();
   assert.equal(result.status, 0, result.stderr);
   const html = readFileSync(join(dir, 'page.html'), 'utf8');
-  assert.equal((html.match(/<figure class="timeline">/g) ?? []).length, 1);
-  assert.match(html, /<table>[\s\S]+<td>通常の表<\/td>/);
+  assert.equal((html.match(/<figure class="timeline">/g) ?? []).length, 2);
+  assert.match(html, /<span class="timeline-when">10:00<\/span><strong>見学<\/strong>/);
+  assert.match(html, /<td>通常の表<\/td>/);
+  assert.match(html, /<td>12:00<\/td>\s*<td>昼食<\/td>/);
   assert.equal((html.match(/class="directory-tree"/g) ?? []).length, 1);
   assert.match(html, /<ul>\s*<li>通常の項目<\/li>/);
   assert.match(html, /<code>index.mjs<\/code><span class="tree-note">変換入口<\/span>/);
@@ -361,6 +366,7 @@ test('renders opt-in Markdown sections with the original components and leaves o
   assert.match(html, /<blockquote class="confirmation">/);
   assert.match(html, /type="radio" name="confirmation-1"/);
   assert.match(html, /type="checkbox" name="confirmation-2"/);
+  assert.match(html, /type="checkbox" name="confirmation-2" value="A"><span class="confirmation-indicator" aria-hidden="true"><\/span><span>A<\/span>/);
   assert.match(html, /<textarea data-confirmation-answer/);
   assert.doesNotMatch(html, /<img\b/);
 });

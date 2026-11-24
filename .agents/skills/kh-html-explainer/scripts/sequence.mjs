@@ -81,5 +81,7 @@ export function renderSequence(source, index, escape, usedIcons) {
 
   const description = messages.map(({ from, to, reply, label }, position) =>
     `${position + 1}. ${from} → ${to}（${reply ? '応答、' : ''}${label}）`).join('。');
-  return diagramFigure({ title, index, width, height: y, description, drawing: lifelines.join('') + arrows.join('') }, escape);
+  return diagramFigure({
+    title, index, width, height: y, description, figureClass: 'sequence', drawing: lifelines.join('') + arrows.join(''),
+  }, escape);
 }

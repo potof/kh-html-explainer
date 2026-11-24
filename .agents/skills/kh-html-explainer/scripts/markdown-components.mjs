@@ -19,7 +19,7 @@ function timelineTable(tokens, inlineText) {
     if (token.type === 'inline') rows.at(-1).push(inlineText(token).trim());
   }
   const headings = rows.shift()?.join('|');
-  if (!['日付|出来事', '日付|出来事|補足'].includes(headings) || !rows.length) return;
+  if (!/^(?:日付\|出来事|時刻\|(?:出来事|予定))(?:\|補足)?$/.test(headings ?? '') || !rows.length) return;
   if (rows.some(([when, title]) => !when || !title)) return;
   return rows.map(([when, title, note]) => ({ when, title, note: note || undefined }));
 }

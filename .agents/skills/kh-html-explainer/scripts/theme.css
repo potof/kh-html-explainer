@@ -192,14 +192,57 @@ blockquote.confirmation {
 .confirmation-hint { margin: 0 0 .5rem; color: var(--muted); }
 .confirmation-choice {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: start;
   gap: 8px;
   padding: 6px 8px;
   cursor: pointer;
 }
 .confirmation-choice:hover, .confirmation-choice:focus-within { background: var(--paper); }
-.confirmation-choice input { margin: 0; accent-color: var(--muted); }
+.confirmation-choice input, .confirmation-indicator {
+  grid-area: 1 / 1;
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: .25rem 0 0;
+}
+.confirmation-choice input { opacity: 0; cursor: pointer; }
+.confirmation-indicator {
+  display: grid;
+  justify-self: center;
+  place-items: center;
+  inline-size: .875rem;
+  block-size: .875rem;
+  margin-block-start: .3125rem;
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--body-ink);
+  pointer-events: none;
+}
+.confirmation-choice input[type="radio"] + .confirmation-indicator { border-radius: 50%; }
+.confirmation-choice input:checked + .confirmation-indicator { background: var(--line); }
+.confirmation-choice input:checked + .confirmation-indicator::before { content: ""; }
+.confirmation-choice input[type="checkbox"]:checked + .confirmation-indicator::before {
+  inline-size: .25rem;
+  block-size: .4375rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+.confirmation-choice input[type="radio"]:checked + .confirmation-indicator::before {
+  inline-size: .4375rem;
+  block-size: .4375rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.confirmation-choice input:focus-visible + .confirmation-indicator {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .confirmation-choice input { opacity: 1; }
+  .confirmation-indicator { display: none; }
+}
 .confirmation-form textarea { background: var(--paper); }
 blockquote > :last-child { margin-bottom: 0; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 1rem 0; }
@@ -266,9 +309,11 @@ figcaption { padding: 7px 12px; border-bottom: 1px solid var(--line); font: 600 
 .mermaid-sequence .messageLine1 { stroke-dasharray: 4 3; }
 .mermaid-sequence marker { fill: var(--muted); stroke: var(--muted); }
 .mermaid-sequence :is(marker circle, .sequence-number-disc) { fill: var(--muted); stroke: none; }
+.mermaid-sequence :is(text, tspan), .sequence .node-label { font-weight: 400; }
+.diagram.mermaid-sequence text, .sequence .node-label { fill: var(--muted); }
 .mermaid-sequence text.actor { text-anchor: middle; font-size: 13px; }
 .mermaid-sequence text.messageText { font-size: 13px; }
-.mermaid-sequence text.sequenceNumber { fill: var(--paper); font-size: 10px; }
+.diagram.mermaid-sequence text.sequenceNumber { fill: var(--paper); font-size: 10px; }
 .mermaid-state .node > :is(.label-container, .outer-path) {
   fill: var(--paper); stroke: var(--flowchart-node-line);
 }
