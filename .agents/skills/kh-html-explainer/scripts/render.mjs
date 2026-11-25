@@ -13,6 +13,7 @@ import { chartValues, renderChart, renderTimeline, renderTimelineEvents } from '
 import { renderGantt } from './gantt.mjs';
 import { isMermaidGantt } from './gantt-input.mjs';
 import { mermaidKind, renderMermaid, validateMermaidSource } from './mermaid.mjs';
+import { renderTeamFlowchart } from './team-flowchart.mjs';
 import { renderSequence } from './sequence.mjs';
 import { renderTree } from './tree.mjs';
 import { renderCallout, renderDiff } from './review-blocks.mjs';
@@ -215,11 +216,14 @@ ${renderBlocks(tokens.slice(index, index + 3))}${commentButton(id, `カード${p
     return icons;
   });
   const sprite = renderAwsIconSprite(icons ?? await loadAwsIcons(env.awsIcons, offline));
-  const figures = new Map(diagrams.map(({ index, aws, title, kind, svg, plots, unit }) => [
-    index, aws ? renderAwsGraph(aws, index, escape) : `<figure class="diagram mermaid-${kind}">
+  const figures = new Map(diagrams.map(({ index, aws, team, title, kind, svg, plots, unit }) => {
+    if (team) return [index, renderTeamFlowchart(team, index, escape)];
+    if (aws) return [index, renderAwsGraph(aws, index, escape)];
+    return [index, `<figure class="diagram mermaid-${kind}">
 <figcaption id="diagram-${index}">${escape(title)}</figcaption>
 <div class="scroll diagram-scroll" tabindex="0" role="region" aria-labelledby="diagram-${index}">${svg}</div>
-${plots?.length ? chartValues(plots, unit, escape) : ''}</figure>`]));
+${plots?.length ? chartValues(plots, unit, escape) : ''}</figure>`];
+  }));
   const article = (introduction + cards.join('')).replace(/<!--mermaid-(\d+)-->/g, (_, id) => figures.get(Number(id)));
   const html = `<!doctype html>
 <html lang="ja" data-html-explainer-mode="light">

@@ -281,6 +281,14 @@ figcaption { padding: 7px 12px; border-bottom: 1px solid var(--line); font: 600 
 .node-label { fill: var(--ink); font-weight: 600; }
 .edge-label { fill: var(--muted); stroke: var(--paper); stroke-width: 4px; paint-order: stroke; font-size: 12px; }
 
+.diagram.team-flowchart .team-lane { fill: var(--fill); stroke: var(--flowchart-group-line); }
+.diagram.team-flowchart .team-card { fill: var(--paper); stroke: var(--flowchart-node-line); }
+.team-flowchart .team-lane-title { fill: var(--body-ink); font-size: 12px; font-weight: 600; }
+.team-flowchart .team-role { fill: var(--body-ink); font-size: 13px; font-weight: 600; }
+.team-flowchart .team-name { fill: var(--muted); font-size: 12px; }
+.team-flowchart .team-dotted { stroke-dasharray: 4 3; }
+.team-flowchart .diagram-scroll > svg { max-width: none; margin-block: .25rem; }
+
 [class*="mermaid-"].diagram .diagram-scroll > svg {
   max-width: none;
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;

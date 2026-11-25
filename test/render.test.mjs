@@ -312,6 +312,51 @@ test('boxes AWS Mermaid flows, aligns branch lanes, and requires a cache for rec
   assert.equal(existsSync(join(dir, 'missing.html')), false);
 });
 
+test('aligns Mermaid team lanes and puts people at the same depth on the same row', chromiumTests, (t) => {
+  const source = readFileSync(new URL('../examples/project-team.md', import.meta.url), 'utf8');
+  const { dir, run } = fixture(t, source);
+  const result = run('team.html', ['--offline']);
+  assert.equal(result.status, 0, result.stderr);
+  const html = readFileSync(join(dir, 'team.html'), 'utf8');
+  assert.match(html, /<figure class="diagram team-flowchart">/);
+  const rectangles = className => [...html.matchAll(new RegExp(
+    `<rect class="${className}" x="(\\d+)" y="(\\d+)" width="(\\d+)" height="(\\d+)"`, 'g',
+  ))].map(match => match.slice(1).map(Number));
+  const [leftLane, rightLane] = rectangles('team-lane');
+  assert.ok(leftLane[0] < rightLane[0]);
+  assert.deepEqual(leftLane.slice(1), rightLane.slice(1));
+  const cards = rectangles('team-card');
+  assert.equal(cards.length, 7);
+  const [owner, lead, memberC, memberD, partner, otherOwner, cr] = cards;
+  assert.equal(owner[0], lead[0]);
+  assert.equal(lead[0], memberC[0]);
+  assert.equal(otherOwner[0], cr[0]);
+  assert.equal(owner[1], otherOwner[1]);
+  assert.equal(lead[1], cr[1]);
+  assert.equal(memberC[1], memberD[1]);
+  assert.ok(memberD[0] > memberC[0] + memberC[2]);
+  assert.ok(partner[1] > memberD[1]);
+  assert.match(html, new RegExp(`class="route team-dotted team-cross" d="M${lead[0] + lead[2]} (\\d+)H${cr[0]}"`));
+  assert.match(html, /class="team-name"[^>]*text-anchor="start"/);
+
+  writeFileSync(join(dir, 'source.md'), source.replace('a_lead -.-> b_cr', 'a_member_c -.-> b_cr'));
+  const rerouted = run('rerouted.html', ['--offline']);
+  assert.equal(rerouted.status, 0, rerouted.stderr);
+  const cross = /class="route team-dotted team-cross" d="M(\d+) (\d+)H(\d+)V(\d+)/
+    .exec(readFileSync(join(dir, 'rerouted.html'), 'utf8'));
+  assert.ok(cross);
+  const [startX, startY, bendX, bendY] = cross.slice(1).map(Number);
+  assert.equal(startX, memberC[0] + memberC[2]);
+  assert.ok(startY < memberD[1] + memberD[3]);
+  assert.ok(bendX > startX && bendX < memberD[0]);
+  assert.ok(bendY > memberD[1] + memberD[3]);
+
+  writeFileSync(join(dir, 'source.md'), source.replace('a_lead -.-> b_cr', 'a_lead -. 連携 .-> b_cr'));
+  const fallback = run('fallback.html', ['--offline']);
+  assert.equal(fallback.status, 0, fallback.stderr);
+  assert.match(readFileSync(join(dir, 'fallback.html'), 'utf8'), /<figure class="diagram mermaid-flowchart">/);
+});
+
 test('rejects missing and circular Mermaid Gantt dependencies', (t) => {
   for (const [rows, message] of [
     [['開始 :start, after unknown, 1d'], /未定義の依存タスクID/],

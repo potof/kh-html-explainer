@@ -22,19 +22,20 @@ export async function inspectDiagrams(jobs) {
       const groupIds = new Set(groups.map(group => group.id));
       const plainNodes = nodes.filter(node => !groupIds.has(node.id));
       const edges = job.kind === 'flowchart' ? db.getEdges() : [];
+      const plain = job.kind === 'flowchart' && !db.getClasses().size && !edges.defaultStyle && !edges.defaultInterpolate
+        && groups.every(group => !group.classes.length && group.labelType !== 'markdown')
+        && plainNodes.every(node => !node.classes.length && !node.styles.length
+          && (!node.type || ['square', 'rect'].includes(node.type))
+          && !node.form && (node.icon || node.labelType !== 'markdown'))
+        && edges.every(edge => edge.type === 'arrow_point' && ['normal', 'dotted', 'thick'].includes(edge.stroke)
+          && !edge.style?.length && !edge.interpolate && !edge.animate && !edge.animation
+          && !edge.classes.length && edge.length === 1 && edge.labelType !== 'markdown');
       const flow = job.kind === 'flowchart' ? {
         direction: db.getDirection(),
-        groups: groups.map(({ id, title, nodes }) => ({ id, name: title, members: nodes })),
+        groups: groups.map(({ id, title, nodes, dir }) => ({ id, name: title, members: nodes, direction: dir })),
         nodes: plainNodes.map(({ id, text, domId }) => ({ id, name: text, icon: icons[domId] })),
         edges: edges.map(({ start, end, text, stroke }) => [start, end, text, stroke]),
-        simple: !db.getClasses().size && !edges.defaultStyle && !edges.defaultInterpolate
-          && groups.every(group => !group.dir && !group.classes.length && group.labelType !== 'markdown')
-          && plainNodes.every(node => !node.classes.length && !node.styles.length
-            && (!node.type || ['square', 'rect'].includes(node.type))
-            && !node.form && (node.icon || node.labelType !== 'markdown'))
-          && edges.every(edge => edge.type === 'arrow_point' && ['normal', 'dotted', 'thick'].includes(edge.stroke)
-            && !edge.style?.length && !edge.interpolate && !edge.animate && !edge.animation
-            && !edge.classes.length && edge.length === 1 && edge.labelType !== 'markdown'),
+        plain, simple: plain && groups.every(group => !group.dir),
       } : undefined;
       const chart = job.kind === 'xychart' ? db.getXYChartData() : undefined;
       const plots = chart?.plots.map(({ title, type, data }) => ({ title, type, data }));

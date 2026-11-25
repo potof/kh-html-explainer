@@ -57,6 +57,7 @@ node .agents/skills/kh-html-explainer/dist/render.mjs examples/aws-mermaid.md ou
 ## 原稿とセキュリティ
 
 - フロー図・シーケンス図・状態遷移図・ER図・棒／折れ線グラフは標準のMermaidで書きます。ガントも日付、工程、依存関係、進捗をMermaidで書けます。[ガントのサンプル原稿](examples/release-schedule.md)
+- 会社別の体制図は、`flowchart LR` の `accTitle` に「体制図」または「組織図」と書き、会社ごとに `subgraph` を使います。シンプルな指揮系統は、同じ大きさの枠に、階層ごとに左から横並びで表示します。[体制図のサンプル原稿](examples/project-team.md)
 - タイムラインにはMarkdownの表、ディレクトリツリーには入れ子のリストを使います。専用の見出しを添えた箇所だけをHTMLで装飾します。警告は引用、変更はunified diffで書きます。[各書式のサンプル原稿](examples/portable-components.md)
 - Markdown の生 HTML、外部画像、外部 CSS、外部フォント、入力由来の JavaScript の実行を防ぎます。外部 URL はテキストとして保持します。 `#top`／`#section-1` 形式のリンクは文書内で動作します。
 - 変換時に CSS と SVG をインライン化し、CSP は固定の CSS と操作用スクリプトのハッシュだけを許可します。閲覧とキャッシュ済みの変換はローカルで完結します。

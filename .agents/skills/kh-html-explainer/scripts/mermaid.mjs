@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { withOfflineChromium } from './mermaid-chromium.mjs';
 import { inspectDiagrams, exportDiagrams } from './mermaid-svg.mjs';
 import { awsFlowchartFromMermaid } from './aws-flowchart.mjs';
+import { teamFlowchartFromMermaid } from './team-flowchart.mjs';
 
 export function mermaidKind(source) {
   const first = source.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('%%'));
@@ -99,6 +100,11 @@ export async function renderMermaid(jobs, loadIcons) {
     const ids = new Set();
     for (const job of parsed) {
       for (const id of Object.values(job.icons)) ids.add(id);
+      const team = teamFlowchartFromMermaid(job);
+      if (team) {
+        boxed.push({ index: job.index, team });
+        continue;
+      }
       const aws = awsFlowchartFromMermaid(job);
       if (!aws) {
         native.push(job);
